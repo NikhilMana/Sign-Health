@@ -1,0 +1,109 @@
+/* General Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f5f5;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Card Styles */
+.card {
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    font-weight: 600;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Video Element */
+#videoElement {
+    max-width: 100%;
+    height: auto;
+    background-color: #000;
+}
+
+/* Detection Status */
+#currentSign {
+    transition: all 0.3s ease;
+}
+
+/* Conversation History */
+#conversationHistory,
+#translationFeed {
+    font-size: 0.95rem;
+}
+
+#conversationHistory::-webkit-scrollbar,
+#translationFeed::-webkit-scrollbar {
+    width: 8px;
+}
+
+#conversationHistory::-webkit-scrollbar-thumb,
+#translationFeed::-webkit-scrollbar-thumb {
+    background-color: #888;
+    border-radius: 4px;
+}
+
+/* Progress Bar */
+.progress {
+    background-color: #e9ecef;
+}
+
+/* Buttons */
+.btn {
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Login/Register Cards */
+.card.shadow {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    #videoElement {
+        width: 100%;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card {
+    animation: fadeIn 0.5s ease;
+}
+
+/* Badge Styles */
+.badge {
+    font-size: 0.85rem;
+    padding: 0.4em 0.8em;
+}
+
+/* Alert Styles */
+.alert {
+    border-radius: 8px;
+}

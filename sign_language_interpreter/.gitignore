@@ -1,0 +1,37 @@
+# Data folders
+MP_DATA/
+MP_DATA_QUALITY/
+videos/
+downloaded_videos/
+datasets/
+
+# Model files
+models/*.keras
+models/*.pkl
+models/*.h5
+models/*.png
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg-info/
+
+# Environment
+.env
+venv/
+env/
+
+# IDE
+.vscode/
+.amazonq/
+.cursor/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
