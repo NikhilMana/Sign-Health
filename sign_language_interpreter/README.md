@@ -9,6 +9,7 @@ A real-time Indian Sign Language recognition system using deep learning and comp
 
 ---
 
+
 ## 📋 Table of Contents
 
 - [Features](#-features)
@@ -650,5 +651,5 @@ For questions, issues, or collaborations:
 ---
 
 **Made with ❤️ for the ISL community**
-
-*Last Updated: 2024*
+**Adding a countributor through PR
+*Last Updated: 2026*
