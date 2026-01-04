@@ -8,7 +8,7 @@ A real-time Indian Sign Language recognition system using deep learning and comp
 ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ---
-   sending first pull request
+
 
 ## 📋 Table of Contents
 
@@ -651,5 +651,5 @@ For questions, issues, or collaborations:
 ---
 
 **Made with ❤️ for the ISL community**
-
-*Last Updated: 2024*
+**Adding a countributor through PR
+*Last Updated: 2026*
