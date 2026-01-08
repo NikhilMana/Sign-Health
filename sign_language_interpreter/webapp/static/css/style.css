@@ -1,109 +1,446 @@
-/* General Styles */
+:root {
+    --primary-color: #2563eb;
+    --secondary-color: #64748b;
+    --success-color: #10b981;
+    --danger-color: #ef4444;
+    --warning-color: #f59e0b;
+    --info-color: #06b6d4;
+    --light-bg: #fefefe;
+    --cream-bg: #faf9f7;
+    --card-bg: #ffffff;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --border-color: #e2e8f0;
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] {
+    --light-bg: #0f172a;
+    --cream-bg: #1e293b;
+    --card-bg: #334155;
+    --text-primary: #f8fafc;
+    --text-secondary: #e2e8f0;
+    --border-color: #475569;
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f5f5f5;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--cream-bg);
+    color: var(--text-primary);
+    margin: 0;
+    padding: 0;
+    transition: all 0.3s ease;
+}
+
+/* Fixed Navbar */
+.navbar {
+    background: var(--card-bg) !important;
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(10px);
+    z-index: 1030;
+    padding: 1rem 0;
 }
 
 .navbar-brand {
     font-size: 1.5rem;
-    font-weight: bold;
+    font-weight: 700;
+    color: var(--primary-color) !important;
+    text-decoration: none;
 }
 
-/* Card Styles */
-.card {
-    border: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
+.user-info {
+    text-align: right;
 }
 
-.card-header {
+.user-name {
+    display: block;
     font-weight: 600;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+    font-size: 0.9rem;
 }
 
-/* Video Element */
-#videoElement {
-    max-width: 100%;
-    height: auto;
-    background-color: #000;
+.user-role {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-/* Detection Status */
-#currentSign {
+.btn-theme {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 0.5rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-theme:hover {
+    background: var(--cream-bg);
+    color: var(--primary-color);
+}
+
+/* Main Content */
+.main-content {
+    padding-top: 100px;
+    min-height: 100vh;
+}
+
+/* Cards */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
     transition: all 0.3s ease;
 }
 
-/* Conversation History */
-#conversationHistory,
-#translationFeed {
-    font-size: 0.95rem;
+.card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
 }
 
-#conversationHistory::-webkit-scrollbar,
-#translationFeed::-webkit-scrollbar {
-    width: 8px;
+.card-header {
+    background: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    border-radius: 12px 12px 0 0 !important;
+    border: none;
+    padding: 1rem 1.25rem;
 }
 
-#conversationHistory::-webkit-scrollbar-thumb,
-#translationFeed::-webkit-scrollbar-thumb {
-    background-color: #888;
-    border-radius: 4px;
+.card-header.bg-success {
+    background: var(--success-color) !important;
 }
 
-/* Progress Bar */
-.progress {
-    background-color: #e9ecef;
+.card-header.bg-info {
+    background: var(--info-color) !important;
+}
+
+.card-header.bg-warning {
+    background: var(--warning-color) !important;
+}
+
+.card-body {
+    padding: 1.25rem;
 }
 
 /* Buttons */
 .btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.625rem 1.25rem;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+}
+
+.btn-success {
+    background: var(--success-color);
+    color: white;
+}
+
+.btn-danger {
+    background: var(--danger-color);
+    color: white;
+}
+
+.btn-outline-primary {
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    background: transparent;
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+}
+
+/* Video Element */
+#videoElement {
+    width: 100%;
+    max-width: 640px;
+    height: auto;
+    border-radius: 8px;
+    background: #000;
+    border: 2px solid var(--border-color);
+}
+
+/* Detection Status */
+#currentSign {
+    background: var(--cream-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1.25rem;
+    font-weight: 600;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+/* Progress Bar */
+.progress {
+    height: 6px;
+    border-radius: 6px;
+    background: var(--cream-bg);
+    overflow: hidden;
+}
+
+.progress-bar {
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+/* Conversation Areas */
+#conversationHistory,
+#translationFeed {
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--cream-bg);
+    font-size: 0.9rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+#conversationHistory::-webkit-scrollbar,
+#translationFeed::-webkit-scrollbar {
+    width: 4px;
+}
+
+#conversationHistory::-webkit-scrollbar-track,
+#translationFeed::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#conversationHistory::-webkit-scrollbar-thumb,
+#translationFeed::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 2px;
+}
+
+/* Message Bubbles */
+.message-bubble {
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+    max-width: 80%;
+    word-wrap: break-word;
+}
+
+.message-patient {
+    background: var(--primary-color);
+    color: white;
+    margin-left: auto;
+}
+
+.message-doctor {
+    background: var(--success-color);
+    color: white;
+    margin-right: auto;
+}
+
+/* Form Controls */
+.form-control {
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    padding: 0.75rem;
+    background: var(--card-bg);
+    color: var(--text-primary);
     transition: all 0.2s ease;
 }
 
-.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    background: var(--card-bg);
+    color: var(--text-primary);
 }
 
-/* Login/Register Cards */
-.card.shadow {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+.form-label {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+/* Alerts */
+.alert {
+    border-radius: 8px;
+    border: none;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.alert-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #065f46;
+    border-left: 4px solid var(--success-color);
+}
+
+.alert-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: #991b1b;
+    border-left: 4px solid var(--danger-color);
+}
+
+/* Badge */
+.badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.375rem 0.625rem;
+    border-radius: 6px;
+}
+
+.bg-success {
+    background: var(--success-color) !important;
+}
+
+.bg-secondary {
+    background: var(--secondary-color) !important;
+}
+
+/* Auth Pages */
+.auth-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: var(--light-bg);
+}
+
+.auth-card {
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    width: 100%;
+    max-width: 400px;
+}
+
+.auth-header {
+    text-align: center;
+    padding: 2rem;
+    background: var(--primary-color);
+    color: white;
+}
+
+.auth-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.auth-subtitle {
+    opacity: 0.9;
+    font-size: 1rem;
+}
+
+/* Status Indicators */
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.status-active {
+    background: var(--success-color);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+.status-inactive {
+    background: var(--secondary-color);
+}
+
+.auth-theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+}
+
+.auth-alerts {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1040;
+    width: 90%;
+    max-width: 500px;
+}
+
+.form-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
-    #videoElement {
-        width: 100%;
+    .main-content {
+        padding-top: 80px;
+    }
+    
+    .navbar {
+        padding: 0.75rem 0;
+    }
+    
+    .user-info {
+        display: none;
     }
     
     .card-body {
         padding: 1rem;
     }
-}
-
-/* Animation */
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    
+    .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
     }
 }
 
-.card {
-    animation: fadeIn 0.5s ease;
-}
-
-/* Badge Styles */
-.badge {
-    font-size: 0.85rem;
-    padding: 0.4em 0.8em;
-}
-
-/* Alert Styles */
-.alert {
-    border-radius: 8px;
+@media (max-width: 576px) {
+    .container-fluid {
+        padding: 0.75rem;
+    }
+    
+    .card {
+        border-radius: 8px;
+    }
+    
+    .auth-container {
+        padding: 1rem;
+    }
 }

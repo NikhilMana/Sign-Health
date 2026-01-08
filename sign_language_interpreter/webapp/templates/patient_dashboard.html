@@ -1,59 +1,103 @@
 {% extends "base.html" %}
 
-{% block title %}Patient Dashboard{% endblock %}
+{% block title %}Patient Dashboard - SignHealth{% endblock %}
 
 {% block content %}
-<div class="row mt-4">
+<div class="row g-4 mt-2">
     <div class="col-12">
-        <h2>Patient Dashboard</h2>
-        <p class="text-muted">Use sign language to communicate with your doctor</p>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-1">Patient Dashboard</h2>
+                <p class="text-muted mb-0">Communicate with your doctor using sign language</p>
+            </div>
+            <div class="status-badge">
+                <span class="status-indicator status-inactive"></span>
+                <span class="small text-muted">Ready to connect</span>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="row mt-3">
+<div class="row g-4">
+    <!-- Video Feed Section -->
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">📹 Video Feed</h5>
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-video me-2"></i>Video Feed
+                </h5>
+                <div class="video-controls">
+                    <span id="videoStatus" class="badge bg-secondary">Disconnected</span>
+                </div>
             </div>
             <div class="card-body text-center">
-                <video id="videoElement" width="640" height="480" autoplay style="border: 2px solid #ddd; border-radius: 8px;"></video>
-                <div class="mt-3">
-                    <button id="startBtn" class="btn btn-success btn-lg">Start Detection</button>
-                    <button id="stopBtn" class="btn btn-danger btn-lg" disabled>Stop Detection</button>
+                <div class="video-container mb-3">
+                    <video id="videoElement" width="640" height="480" autoplay muted></video>
+                    <div class="video-overlay" id="videoOverlay">
+                        <i class="fas fa-video-slash fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Camera not connected</p>
+                    </div>
+                </div>
+                
+                <div class="control-buttons">
+                    <button id="startBtn" class="btn btn-success btn-lg me-2">
+                        <i class="fas fa-play me-2"></i>Start Detection
+                    </button>
+                    <button id="stopBtn" class="btn btn-danger btn-lg" disabled>
+                        <i class="fas fa-stop me-2"></i>Stop Detection
+                    </button>
                 </div>
             </div>
         </div>
     </div>
     
+    <!-- Detection & Communication Panel -->
     <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0">💬 Detected Signs</h5>
+        <!-- Detection Status -->
+        <div class="card mb-3">
+            <div class="card-header bg-info">
+                <h5 class="mb-0">
+                    <i class="fas fa-brain me-2"></i>Sign Detection
+                </h5>
             </div>
             <div class="card-body">
-                <div id="detectionStatus" class="alert alert-secondary">
-                    <strong>Status:</strong> Not started
+                <div id="detectionStatus" class="alert alert-secondary mb-3">
+                    <i class="fas fa-circle-notch me-2"></i>
+                    <strong>Status:</strong> <span id="statusText">Not started</span>
                 </div>
                 
-                <div class="mb-3">
-                    <h6>Current Detection:</h6>
-                    <div id="currentSign" class="p-3 bg-light rounded text-center" style="font-size: 24px; min-height: 80px;">
+                <div class="detection-result mb-3">
+                    <h6 class="mb-2">Current Sign:</h6>
+                    <div id="currentSign" class="text-center">
                         <span class="text-muted">Waiting...</span>
                     </div>
                 </div>
                 
-                <div class="mb-3">
-                    <h6>Confidence:</h6>
-                    <div class="progress" style="height: 25px;">
-                        <div id="confidenceBar" class="progress-bar bg-success" role="progressbar" style="width: 0%">0%</div>
+                <div class="confidence-meter mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h6 class="mb-0">Confidence:</h6>
+                        <small id="confidenceText" class="text-muted">0%</small>
+                    </div>
+                    <div class="progress">
+                        <div id="confidenceBar" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
                     </div>
                 </div>
-                
-                <div>
-                    <h6>Conversation History:</h6>
-                    <div id="conversationHistory" class="border rounded p-2" style="height: 200px; overflow-y: auto; background-color: #f8f9fa;">
-                        <p class="text-muted text-center">No messages yet</p>
+            </div>
+        </div>
+        
+        <!-- Conversation History -->
+        <div class="card">
+            <div class="card-header bg-success">
+                <h5 class="mb-0">
+                    <i class="fas fa-comments me-2"></i>Conversation
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div id="conversationHistory" class="p-3">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-comment-dots fa-2x mb-2"></i>
+                        <p class="mb-0">No messages yet</p>
+                        <small>Start signing to begin conversation</small>
                     </div>
                 </div>
             </div>
@@ -61,6 +105,8 @@
     </div>
 </div>
 
-<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<!-- Audio Player (hidden) -->
+<audio id="audioPlayer" style="display: none;"></audio>
+
 <script src="{{ url_for('static', filename='js/patient.js') }}"></script>
 {% endblock %}

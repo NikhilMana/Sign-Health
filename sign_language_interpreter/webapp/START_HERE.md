@@ -36,7 +36,7 @@ Open browser: **http://localhost:5000**
 ### Register Doctor Account:
 - Name: Dr. Smith
 - Email: doctor@example.com (must match config.py)
-- Password: test123
+- Password: 123456
 
 ### Register Patient Account:
 - Name: John Doe  

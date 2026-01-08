@@ -16,7 +16,7 @@ def sanitize_folder_name(text):
     text = re.sub(r'\s+', '_', text)
     text = re.sub(r'[^a-z0-9_]', '', text)
     return text[:100] if text else 'unknown'
-
+fdgdsrgsdfgfdsgdfsg
 def parse_srt_file(srt_file_path):
     """
     Parse the .srt file and return a list of dictionaries.
