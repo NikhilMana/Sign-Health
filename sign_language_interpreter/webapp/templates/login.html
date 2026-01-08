@@ -1,34 +1,54 @@
-{% extends "base.html" %}
+{% extends "auth_base.html" %}
 
-{% block title %}Login - ISL Telehealth{% endblock %}
+{% block title %}Login - SignHealth{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow">
-            <div class="card-body p-5">
-                <h2 class="text-center mb-4">🤟 ISL Telehealth</h2>
-                <h5 class="text-center text-muted mb-4">Login</h5>
-                
-                <form method="POST" action="{{ url_for('login') }}">
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary w-100">Login</button>
-                </form>
-                
-                <div class="text-center mt-3">
-                    <p class="text-muted">Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-title">
+                <i class="fas fa-hands mb-2"></i>
+                <div>SignHealth</div>
+            </div>
+            <div class="auth-subtitle">Sign in to your account</div>
+        </div>
+        
+        <div class="p-4">
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="mb-3">
+                    <label for="email" class="form-label">
+                        <i class="fas fa-envelope me-2"></i>Email Address
+                    </label>
+                    <input type="email" class="form-control" id="email" name="email" 
+                           placeholder="Enter your email" required>
                 </div>
+                
+                <div class="mb-4">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock me-2"></i>Password
+                    </label>
+                    <input type="password" class="form-control" id="password" name="password" 
+                           placeholder="Enter your password" required>
+                </div>
+                
+                <div class="d-grid mb-3">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                    </button>
+                </div>
+            </form>
+            
+            <div class="text-center">
+                <p class="text-muted mb-0">
+                    Don't have an account? 
+                    <a href="{{ url_for('register') }}" class="text-decoration-none">
+                        Create one here
+                    </a>
+                </p>
             </div>
         </div>
     </div>
 </div>
+
+
 {% endblock %}

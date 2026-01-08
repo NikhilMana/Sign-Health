@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 print("=" * 60)
-print("ISL Telehealth Web App - Setup Verification")
+print("Sign Health Web App - Setup Verification")
 print("=" * 60)
 
 errors = []

@@ -1,40 +1,70 @@
-{% extends "base.html" %}
+{% extends "auth_base.html" %}
 
-{% block title %}Register - ISL Telehealth{% endblock %}
+{% block title %}Register - SignHealth{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-5">
-    <div class="col-md-6 col-lg-4">
-        <div class="card shadow">
-            <div class="card-body p-5">
-                <h2 class="text-center mb-4">🤟 ISL Telehealth</h2>
-                <h5 class="text-center text-muted mb-4">Register</h5>
-                
-                <form method="POST" action="{{ url_for('register') }}">
-                    <div class="mb-3">
-                        <label for="full_name" class="form-label">Full Name</label>
-                        <input type="text" class="form-control" id="full_name" name="full_name" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
-                        <small class="form-text text-muted">Use doctor email for doctor access</small>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required minlength="6">
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary w-100">Register</button>
-                </form>
-                
-                <div class="text-center mt-3">
-                    <p class="text-muted">Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-title">
+                <i class="fas fa-hands mb-2"></i>
+                <div>SignHealth</div>
+            </div>
+            <div class="auth-subtitle">Create your account</div>
+        </div>
+        
+        <div class="p-4">
+            <form method="POST" action="{{ url_for('register') }}">
+                <div class="mb-3">
+                    <label for="full_name" class="form-label">
+                        <i class="fas fa-user me-2"></i>Full Name
+                    </label>
+                    <input type="text" class="form-control" id="full_name" name="full_name" 
+                           placeholder="Enter your full name" required>
                 </div>
+                
+                <div class="mb-3">
+                    <label for="email" class="form-label">
+                        <i class="fas fa-envelope me-2"></i>Email Address
+                    </label>
+                    <input type="email" class="form-control" id="email" name="email" 
+                           placeholder="Enter your email" required>
+                    <div class="form-text">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Use a doctor email for doctor access, or any email for patient access
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock me-2"></i>Password
+                    </label>
+                    <input type="password" class="form-control" id="password" name="password" 
+                           placeholder="Create a password" required minlength="6">
+                    <div class="form-text">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Minimum 6 characters required
+                    </div>
+                </div>
+                
+                <div class="d-grid mb-3">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-user-plus me-2"></i>Create Account
+                    </button>
+                </div>
+            </form>
+            
+            <div class="text-center">
+                <p class="text-muted mb-0">
+                    Already have an account? 
+                    <a href="{{ url_for('login') }}" class="text-decoration-none">
+                        Sign in here
+                    </a>
+                </p>
             </div>
         </div>
     </div>
 </div>
+
+
 {% endblock %}
