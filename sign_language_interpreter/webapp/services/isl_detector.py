@@ -27,6 +27,7 @@ class ISLDetector:
         self.prediction_history = deque(maxlen=5)
         self.current_prediction = ""
         self.prediction_confidence = 0.0
+        self.last_sent_prediction = ""
         self.PREDICTION_THRESHOLD = 0.7
     
     def extract_keypoints(self, results):
@@ -80,8 +81,13 @@ class ISLDetector:
             else:
                 self.prediction_confidence = confidence
         
+        # Only return if it's a new prediction
+        should_send = self.current_prediction and self.current_prediction != self.last_sent_prediction
+        if should_send:
+            self.last_sent_prediction = self.current_prediction
+        
         return {
-            'text': self.current_prediction,
+            'text': self.current_prediction if should_send else '',
             'confidence': float(self.prediction_confidence),
             'detected': len(self.sequence) == 20
         }
@@ -91,6 +97,7 @@ class ISLDetector:
         self.prediction_history.clear()
         self.current_prediction = ""
         self.prediction_confidence = 0.0
+        self.last_sent_prediction = ""
     
     def close(self):
         self.holistic.close()
