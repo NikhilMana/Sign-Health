@@ -28,7 +28,11 @@ async function initCamera() {
         return true;
     } catch (error) {
         console.error('Camera error:', error);
-        showAlert('Could not access camera. Please check permissions.', 'danger');
+        let message = 'Could not access camera. Please allow camera permissions and refresh.';
+        if (error.name === 'NotAllowedError') {
+            message = 'Camera access denied. Click the camera icon in your browser address bar to allow access.';
+        }
+        showAlert(message, 'danger');
         videoOverlay.innerHTML = `
             <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
             <p class="text-danger">Camera access denied</p>
