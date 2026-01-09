@@ -2,6 +2,10 @@
 
 {% block title %}Patient Dashboard - SignHealth{% endblock %}
 
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/patient.js') }}"></script>
+{% endblock %}
+
 {% block content %}
 <div class="row g-4 mt-2">
     <div class="col-12">
@@ -108,5 +112,4 @@
 <!-- Audio Player (hidden) -->
 <audio id="audioPlayer" style="display: none;"></audio>
 
-<script src="{{ url_for('static', filename='js/patient.js') }}"></script>
 {% endblock %}
