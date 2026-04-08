@@ -181,13 +181,18 @@ function stopTimer() {
 // ── ISL Translations ─────────────────────────────────
 
 socket.on('translation', (data) => {
-    if (!data.text) return;
+    const sign = data.sign || data.text;
+    if (!sign) return;
 
     messageCounter++;
     messageCountEl.textContent = messageCounter;
 
     // Clear placeholder
     if (feedPlaceholder) feedPlaceholder.remove();
+
+    // Priority badge color
+    const priorityColors = { high: '#e74c3c', medium: '#f39c12', low: '#27ae60' };
+    const pColor = priorityColors[(data.priority || '').toLowerCase()] || '#6c757d';
 
     // Add to feed
     const ts = new Date().toLocaleTimeString();
@@ -198,14 +203,19 @@ socket.on('translation', (data) => {
             <span class="msg-sender" style="color:var(--primary-color);">Patient (ISL)</span>
             <span class="msg-time">${ts}</span>
         </div>
-        <div class="msg-body">${data.text}</div>
-        <div class="msg-confidence">Confidence: ${Math.round(data.confidence * 100)}%</div>
+        <div class="msg-body">${sign.toUpperCase()}</div>
+        <div class="msg-details" style="margin-top:6px; font-size:0.8rem; color:#b0b0b0; line-height:1.6;">
+            <div><strong>Intent:</strong> ${data.intent || '—'}</div>
+            <div><strong>Priority:</strong> <span style="color:${pColor}; font-weight:600;">${(data.priority || '—').toUpperCase()}</span></div>
+            <div><strong>System action:</strong> ${data.action_result || '—'}</div>
+        </div>
+        <div class="msg-confidence" style="margin-top:4px;">Confidence: ${Math.round((data.confidence || 0) * 100)}%</div>
     `;
     translationFeed.appendChild(div);
     translationFeed.scrollTop = translationFeed.scrollHeight;
 
     // ISL toast on video
-    showIslToast(data.text);
+    showIslToast(sign.toUpperCase());
 
     // Play audio
     if (data.audio) {
@@ -216,9 +226,9 @@ socket.on('translation', (data) => {
     }
 
     // Auto-append to notes
-    consultationNotes.value += `[${ts}] Patient: ${data.text}\n`;
+    consultationNotes.value += `[${ts}] Patient: ${sign} | Intent: ${data.intent || '—'} | Priority: ${data.priority || '—'} | Action: ${data.action_result || '—'}\n`;
 
-    showNotification('Patient signed', data.text);
+    showNotification('Patient signed', sign);
 });
 
 function showIslToast(text) {

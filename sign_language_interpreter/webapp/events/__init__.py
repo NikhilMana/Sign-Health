@@ -8,6 +8,7 @@ import cv2
 import numpy as np
 from flask import request
 from flask_socketio import emit, join_room
+from services.agent_controller import process_prediction
 
 logger = logging.getLogger(__name__)
 
@@ -40,15 +41,22 @@ def register_events(socketio, get_isl_detector, tts_service_cls):
             result = detector.process_frame(frame)
 
             if result["text"] and result["confidence"] > 0.7:
+                # Post-process: map to intent and invoke MCP tool
+                enriched = process_prediction(result)
+
                 audio_base64 = tts_service_cls.text_to_speech(result["text"])
 
                 emit(
                     "translation",
                     {
-                        "text": result["text"],
-                        "confidence": result["confidence"],
-                        "audio": audio_base64,
-                        "patient_id": data.get("patient_id"),
+                        "sign":          enriched["sign"],
+                        "intent":        enriched["intent"],
+                        "priority":      enriched["priority"],
+                        "tool_used":     enriched["tool_used"],
+                        "action_result": enriched["action_result"],
+                        "confidence":    enriched["confidence"],
+                        "audio":         audio_base64,
+                        "patient_id":    data.get("patient_id"),
                     },
                     room=data.get("doctor_room"),
                     broadcast=True,
