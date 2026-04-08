@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "<string>", line 5, in <module>
+  File "C:\Coding\AI sign - Copy\isl-telehealth-agent\agents\perception_agent.py", line 66, in __init__
+    self.mp_holistic = mp.solutions.holistic
+                       ^^^^^^^^^^^^
+AttributeError: module 'mediapipe' has no attribute 'solutions'

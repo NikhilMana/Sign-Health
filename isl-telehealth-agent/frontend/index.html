@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISL Telehealth Interpreter Dashboard</title>
+    <!-- Import Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* Base Variables: Professional Dark Navy / Teal medical theme */
+        :root {
+            --bg-color: #0d1117;
+            --panel-bg: rgba(22, 27, 34, 0.7);
+            --accent-teal: #00b4d8;
+            --accent-glow: rgba(0, 180, 216, 0.4);
+            --text-main: #f0f6fc;
+            --text-muted: #8b949e;
+            --color-green: #2ea043;
+            --color-yellow: #d29922;
+            --color-red: #f85149;
+            --color-orange: #d97706;
+            --border-color: rgba(48, 54, 61, 0.5);
+            --border-highlight: rgba(0, 180, 216, 0.6);
+            --glass-blur: blur(12px);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px;
+            min-width: 1280px;
+            box-sizing: border-box;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(0, 180, 216, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(0, 180, 216, 0.08), transparent 25%);
+        }
+
+        /* Fluid Desktop Grid */
+        .container {
+            display: grid;
+            grid-template-columns: 660px 1fr;
+            gap: 24px;
+            max-width: 1600px;
+            margin: 0 auto;
+            height: calc(100vh - 48px);
+        }
+
+        /* Glassmorphism Panel Architecture */
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        /* ======================== 
+           LEFT PANEL: Perception 
+           ======================== */
+        
+        .video-container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+        }
+        
+        #webcam, #landmarks-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #landmarks-canvas {
+            z-index: 10;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 18px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Big Detected Sign Display */
+        .primary-sign {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .primary-sign h3 {
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+        .primary-sign .sign-text {
+            font-size: 34px;
+            font-weight: 800;
+            color: var(--accent-teal);
+            margin-bottom: 16px;
+            text-transform: capitalize;
+            text-shadow: 0 0 12px var(--accent-glow);
+            min-height: 42px;
+        }
+        
+        /* Confidence Progress Bar */
+        .confidence-wrapper {
+            background: rgba(255, 255, 255, 0.08);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            width: 80%;
+            margin: 0 auto;
+        }
+        .confidence-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--color-green);
+            transition: width 0.4s ease-out, background-color 0.4s ease;
+        }
+
+        /* Top 3 Multi-list */
+        .predictions-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .predictions-list li {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #d1d5db;
+        }
+        .predictions-list li span:last-child {
+            font-family: monospace;
+            color: var(--accent-teal);
+            font-weight: 600;
+        }
+
+        /* Circular Frame Buffer Indicator */
+        .buffer-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 8px;
+        }
+        svg.circular-chart {
+            width: 72px;
+            height: 72px;
+        }
+        .circle-bg {
+            fill: none;
+            stroke: rgba(255,255,255,0.08);
+            stroke-width: 3.5;
+        }
+        .circle {
+            fill: none;
+            stroke-width: 3.5;
+            stroke: var(--accent-teal);
+            stroke-linecap: round;
+            stroke-dasharray: 100, 100;
+            stroke-dashoffset: 100;
+            transition: stroke-dashoffset 0.15s linear;
+        }
+        .buffer-text {
+            fill: #fff;
+            font-size: 11px;
+            text-anchor: middle;
+            font-weight: bold;
+        }
+
+        /* ======================== 
+           RIGHT PANEL: Pipeline 
+           ======================== */
+
+        .header-box {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+        .header-box h2 {
+            margin: 0 0 16px 0;
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Agent Status Dots */
+        .pipeline-status {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.25);
+            padding: 12px 18px;
+            border-radius: 8px;
+        }
+        .agent-node {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: color 0.3s;
+        }
+        .agent-node.active {
+            color: var(--text-main);
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #30363d;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        .agent-node.active .dot {
+            background: var(--color-green);
+            box-shadow: 0 0 10px var(--color-green);
+            animation: pulse-dot 0.8s infinite alternate ease-in-out;
+        }
+        
+        @keyframes pulse-dot {
+            0% { transform: scale(1); opacity: 0.7; }
+            100% { transform: scale(1.4); opacity: 1; }
+        }
+
+        /* Emergency Flash Banner */
+        .emergency-banner {
+            display: none;
+            background: rgba(248, 81, 73, 0.12);
+            border: 1px solid var(--color-red);
+            color: #ff7b72;
+            padding: 14px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 0.5px;
+            animation: alert-flash 1.5s infinite;
+        }
+        @keyframes alert-flash {
+            0%, 100% { box-shadow: 0 0 5px rgba(248,81,73,0); }
+            50% { box-shadow: 0 0 20px rgba(248,81,73,0.35); }
+        }
+
+        /* Context Output Structuring */
+        .complaint-form {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding: 14px;
+        }
+        .field-box {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px;
+        }
+        .field-box label {
+            display: block;
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .field-box .value {
+            font-size: 15px;
+            font-weight: 600;
+            min-height: 18px;
+            color: var(--text-main);
+            text-transform: capitalize;
+        }
+
+        /* Alternating Bubble Interstitial */
+        .conversation-feed {
+            flex: 1;
+            background: rgba(0,0,0,0.25);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-color) transparent;
+        }
+        
+        .bubble {
+            max-width: 75%;
+            padding: 14px 18px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.5;
+            animation: pop-in 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+            opacity: 0;
+            transform: translateY(15px) scale(0.95);
+        }
+        @keyframes pop-in {
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        
+        .bubble.patient {
+            align-self: flex-start;
+            background: rgba(0, 180, 216, 0.1);
+            border: 1px solid var(--border-highlight);
+            border-bottom-left-radius: 4px;
+            color: var(--text-main);
+        }
+        .bubble.patient::before {
+            content: 'ISL Input';
+            display: block;
+            font-size: 10px;
+            color: var(--accent-teal);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .bubble.doctor {
+            align-self: flex-end;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-color);
+            border-bottom-right-radius: 4px;
+            color: var(--text-main);
+        }
+
+        /* Final Formatted Response Hook */
+        .doctor-card {
+            display: none;
+            flex-direction: row;
+            align-items: center;
+            gap: 18px;
+            background: rgba(255,255,255,0.04);
+            border: 2px solid var(--border-color); /* To be overridden by JS colors */
+            border-radius: 12px;
+            padding: 18px;
+            margin-top: 5px;
+            transition: border-color 0.4s ease;
+        }
+        .doctor-card .icon {
+            font-size: 40px;
+        }
+        .doctor-card .content h4 {
+            margin: 0 0 6px 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .doctor-card .content p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.4;
+            color: #c9d1d9;
+        }
+        
+        /* Direct class overrides for Card Border */
+        .border-green { border-color: var(--color-green) !important; }
+        .border-yellow { border-color: var(--color-yellow) !important; box-shadow: 0 0 15px rgba(210,153,34,0.1); }
+        .border-orange { border-color: var(--color-orange) !important; box-shadow: 0 0 15px rgba(217,119,6,0.15); }
+        .border-red { border-color: var(--color-red) !important; box-shadow: 0 0 20px rgba(248,81,73,0.25); }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- LEFT PANEL -->
+    <div class="panel">
+        <div class="video-container">
+            <video id="webcam" autoplay playsinline muted></video>
+            <canvas id="landmarks-canvas"></canvas>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="card primary-sign">
+                <h3>Detected Sign</h3>
+                <div class="sign-text" id="top-sign-text">Awaiting Input</div>
+                <div class="confidence-wrapper">
+                    <div class="confidence-bar" id="top-sign-conf-bar"></div>
+                </div>
+            </div>
+            
+            <div class="card" style="display: flex; gap: 20px; align-items: center;">
+                <div class="buffer-container">
+                    <svg viewBox="0 0 36 36" class="circular-chart">
+                      <path class="circle-bg"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                      <path class="circle" id="buffer-circle"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                      <text x="18" y="20.7" class="buffer-text" id="buffer-text">0/20</text>
+                    </svg>
+                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">FRAMES</span>
+                </div>
+                <div style="flex: 1;">
+                    <h3 style="margin: 0 0 12px 0; font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Top Predictions</h3>
+                    <ul class="predictions-list" id="predictions-list">
+                        <li><span>--</span> <span>0%</span></li>
+                        <li><span>--</span> <span>0%</span></li>
+                        <li><span>--</span> <span>0%</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="panel">
+        <div class="header-box">
+            <h2>Agent Pipeline Status</h2>
+            <div class="pipeline-status">
+                <div class="agent-node" id="agent-perception"><div class="dot"></div> Perception</div>
+                <div class="agent-node" id="agent-context"><div class="dot"></div> Context</div>
+                <div class="agent-node" id="agent-intent"><div class="dot"></div> Intent</div>
+                <div class="agent-node" id="agent-dialogue"><div class="dot"></div> Dialogue</div>
+                <div class="agent-node" id="agent-tool"><div class="dot"></div> Tool</div>
+                <div class="agent-node" id="agent-response"><div class="dot"></div> Response</div>
+            </div>
+        </div>
+        
+        <div class="emergency-banner" id="emergency-banner">
+            🚨 MEDICAL EMERGENCY DETECTED — ESCALATING TO RESPONSE 🚨
+        </div>
+
+        <div class="card complaint-form">
+            <div class="field-box">
+                <label>Body Part</label>
+                <div class="value" id="val-body_part">--</div>
+            </div>
+            <div class="field-box">
+                <label>Symptom</label>
+                <div class="value" id="val-symptom">--</div>
+            </div>
+            <div class="field-box">
+                <label>Duration</label>
+                <div class="value" id="val-duration">--</div>
+            </div>
+        </div>
+
+        <div class="conversation-feed" id="chat-feed">
+            <div id="startup-msg" style="text-align: center; color: var(--text-muted); font-size: 13px; margin-top: auto; padding: 20px;">
+                Session initialized. Looking for signs...
+            </div>
+        </div>
+
+        <div class="doctor-card" id="patient-card">
+            <div class="icon" id="pc-icon">ℹ️</div>
+            <div class="content">
+                <h4 id="pc-headline">Awaiting Assessment</h4>
+                <p id="pc-detail">Information will appear here once medical context processing finishes.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ---------------------------------------------------------
+    // 1. WEBCAM INITIALIZATION
+    // ---------------------------------------------------------
+    async function initWebcam() {
+        try {
+            // Note: In reality, main.py captures the webcam via cv2 and handles the landmarks
+            // in a Python-driven window rather than streaming the video overlay back over WS.
+            // But we can ask permissions here just in case they're using a generic local stream
+            // setup or eventually map it to WebRTC.
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: 640, height: 480, facingMode: "user" } 
+            });
+            document.getElementById('webcam').srcObject = stream;
+        } catch (err) {
+            console.error("Webcam access denied or unavailable: ", err);
+        }
+    }
+    initWebcam();
+
+    // ---------------------------------------------------------
+    // 2. BACKEND WEBSOCKET INTEGRATION
+    // ---------------------------------------------------------
+    const ws = new WebSocket('ws://localhost:8765');
+    
+    ws.onopen = () => {
+        appendSystemLog("Connected to ISL Telehealth multi-agent backend.");
+    };
+    
+    ws.onclose = () => {
+        appendSystemLog("Disconnected from backend server. Trying to reconnect...");
+    };
+
+    ws.onmessage = (event) => {
+        try {
+            const msg = JSON.parse(event.data);
+            routeBrokerMessage(msg);
+        } catch (e) {
+            console.error("JSON parse failure on WS message: ", e);
+        }
+    };
+
+    // ---------------------------------------------------------
+    // 3. UI DOM MANIPULATORS
+    // ---------------------------------------------------------
+    
+    // Status Dot Pulse
+    function pulseAgentNode(agentName) {
+        const node = document.getElementById(`agent-${agentName.toLowerCase()}`);
+        if(node) {
+            node.classList.add('active');
+            setTimeout(() => {
+                node.classList.remove('active');
+            }, 1000); // 1s active duration
+        }
+    }
+
+    // Chat Feed
+    function appendChatBubble(speaker, text) {
+        const feed = document.getElementById('chat-feed');
+        const startupMsg = document.getElementById('startup-msg');
+        if (startupMsg) startupMsg.remove();
+
+        const bubble = document.createElement('div');
+        bubble.className = speaker === 'patient' ? 'bubble patient' : 'bubble doctor';
+        bubble.textContent = text;
+        
+        feed.appendChild(bubble);
+        feed.scrollTop = feed.scrollHeight; // Auto-scroll
+    }
+
+    function appendSystemLog(text) {
+        const feed = document.getElementById('chat-feed');
+        const div = document.createElement('div');
+        div.style.alignSelf = 'center';
+        div.style.color = 'var(--text-muted)';
+        div.style.fontSize = '12px';
+        div.style.marginTop = '10px';
+        div.textContent = text;
+        feed.appendChild(div);
+        feed.scrollTop = feed.scrollHeight;
+    }
+
+    // Response UI Box Update
+    function updateDoctorResponseCard(cardData, urgencyColor) {
+        const cardTarget = document.getElementById('patient-card');
+        cardTarget.style.display = 'flex'; // Un-hide
+        
+        document.getElementById('pc-icon').textContent = cardData.icon || 'ℹ️';
+        document.getElementById('pc-headline').textContent = cardData.headline || 'Medical Update';
+        document.getElementById('pc-detail').textContent = cardData.detail || '';
+        
+        // Wipe old color borders and drop shadows
+        cardTarget.className = 'doctor-card';
+        if(urgencyColor) {
+            cardTarget.classList.add(`border-${urgencyColor}`);
+        }
+    }
+
+    // ---------------------------------------------------------
+    // 4. MESSAGE ROUTER
+    // ---------------------------------------------------------
+    function routeBrokerMessage(msg) {
+        if (!msg.topic || !msg.message) return;
+
+        const topic = msg.topic;
+        const payload = msg.message;
+
+        // AGENT STATUS / BUFFER
+        if (topic === 'agent_status') {
+            if (payload.pipeline_status === 'buffering') {
+                pulseAgentNode('perception');
+                
+                // Circular Buffer handling
+                let fc = payload.buffer_count || 0;
+                // Map 0-20 frames to 100-0 offset (100 offset = 0 progress stroke length)
+                let offset = 100 - ((fc / 20) * 100);
+                if (offset < 0) offset = 0;
+                
+                document.getElementById('buffer-circle').style.strokeDashoffset = offset;
+                document.getElementById('buffer-text').textContent = `${fc}/20`;
+            }
+            if (payload.pipeline_status === 'collecting_signs') {
+                pulseAgentNode('context');
+                
+                if (payload.complaint) {
+                    const cmp = payload.complaint;
+                    document.getElementById('val-body_part').textContent = cmp.body_part || '--';
+                    document.getElementById('val-symptom').textContent = cmp.symptom || '--';
+                    document.getElementById('val-duration').textContent = cmp.duration || '--';
+                    
+                    if (cmp.raw_signs && cmp.raw_signs.length > 0) {
+                        appendChatBubble('patient', `${cmp.raw_signs.join(' + ')}`);
+                    }
+                }
+            }
+        }
+        
+        // PERCEPTION (SIGN DETECTED)
+        if (topic === 'sign_detected') {
+            pulseAgentNode('perception');
+            
+            // Full buffer visualization
+            document.getElementById('buffer-circle').style.strokeDashoffset = 0;
+            document.getElementById('buffer-text').textContent = `20/20`;
+
+            // Render predictions
+            if (payload.top_predictions && payload.top_predictions.length > 0) {
+                const top = payload.top_predictions[0];
+                document.getElementById('top-sign-text').textContent = top.sign;
+                
+                // Set Confidence color dynamically
+                const confPct = Math.round(top.confidence * 100);
+                const confBar = document.getElementById('top-sign-conf-bar');
+                confBar.style.width = `${confPct}%`;
+                
+                if (confPct > 70) confBar.style.backgroundColor = 'var(--color-green)';
+                else if (confPct > 50) confBar.style.backgroundColor = 'var(--color-yellow)';
+                else confBar.style.backgroundColor = 'var(--color-red)';
+                
+                // Write list items
+                const listRoot = document.getElementById('predictions-list');
+                listRoot.innerHTML = '';
+                payload.top_predictions.forEach(pred => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span>${pred.sign}</span><span>${Math.round(pred.confidence * 100)}%</span>`;
+                    listRoot.appendChild(li);
+                });
+            }
+        }
+        
+        // CONTEXT COMPLAINT
+        if (topic === 'complaint_ready') {
+            pulseAgentNode('context');
+            if (payload.complaint) {
+                const cmp = payload.complaint;
+                document.getElementById('val-body_part').textContent = cmp.body_part || '--';
+                document.getElementById('val-symptom').textContent = cmp.symptom || '--';
+                document.getElementById('val-duration').textContent = cmp.duration || '--';
+                
+                if (cmp.raw_signs && cmp.raw_signs.length > 0) {
+                    appendChatBubble('patient', `${cmp.raw_signs.join(' + ')}`);
+                }
+            }
+        }
+        
+        // EMERGENCY TRIGGERED
+        if (topic === 'emergency_triggered') {
+            pulseAgentNode('intent');
+            const banner = document.getElementById('emergency-banner');
+            banner.style.display = 'block';
+        }
+
+        // INTENT STAGE
+        if (topic === 'intent_classified') {
+            pulseAgentNode('intent');
+            // If it's not an emergency, we hide the banner just in case
+            if (payload.intent !== 'EMERGENCY_ALERT') {
+                document.getElementById('emergency-banner').style.display = 'none';
+            } else {
+                document.getElementById('emergency-banner').style.display = 'block';
+            }
+        }
+        
+        // RESPONSE CAP OFF
+        if (topic === 'response_ready') {
+            // Visualize the final stages executing sequentially
+            pulseAgentNode('dialogue');
+            setTimeout(() => pulseAgentNode('tool'), 300);
+            setTimeout(() => pulseAgentNode('response'), 600);
+            
+            const res = payload;
+            
+            // Sync the feed additions visually alongside the node pulses
+            setTimeout(() => {
+                if (res.text_response) {
+                    appendChatBubble('doctor', res.text_response);
+                }
+                if (res.patient_card) {
+                    updateDoctorResponseCard(res.patient_card, res.urgency_color);
+                }
+            }, 800);
+        }
+    }
+
+</script>
+</body>
+</html>

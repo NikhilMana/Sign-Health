@@ -1,0 +1,64 @@
+{
+  "symptoms": [
+    "pain", "ache", "fever", "cough", "cold", "itch", "burn", "swell", "bleed", "dizzy", 
+    "nausea", "vomit", "fatigue", "numb", "rash", "sneeze", "choke", "cramp", "bruise", 
+    "sore", "stiff", "weak", "deaf", "blind", "mute"
+  ],
+  "body_parts": [
+    "head", "neck", "chest", "back", "stomach", "arm", "leg", "hand", "foot", "eye", 
+    "ear", "nose", "mouth", "throat", "heart", "lung", "brain", "liver", "kidney", "spine"
+  ],
+  "time_indicators": {
+    "today": 0,
+    "yesterday": 1,
+    "two_days": 2,
+    "three_days": 3,
+    "one_week": 7,
+    "two_weeks": 14,
+    "one_month": 30
+  },
+  "severity_words": {
+    "mild": 2,
+    "moderate": 5,
+    "severe": 8,
+    "unbearable": 10,
+    "slight": 1,
+    "intense": 7
+  },
+  "emergency_patterns": [
+    {
+      "signs": ["chest", "pain", "breathe"],
+      "condition": "Possible Cardiac Event",
+      "action": "Call emergency services immediately"
+    },
+    {
+      "signs": ["head", "pain", "bleed"],
+      "condition": "Potential Traumatic Brain Injury",
+      "action": "Hospitalize immediately and alert trauma team"
+    },
+    {
+      "signs": ["stomach", "pain", "severe"],
+      "condition": "Acute Abdomen",
+      "action": "Urgent surgical evaluation required"
+    },
+    {
+      "signs": ["throat", "swell", "breathe"],
+      "condition": "Anaphylactic Shock",
+      "action": "Administer Epinephrine post-haste and call 911"
+    },
+    {
+      "signs": ["leg", "numb", "cold"],
+      "condition": "Vascular Emergency (Critical Limb Ischemia)",
+      "action": "Urgent referral to vascular surgical specialist"
+    },
+    {
+      "signs": ["eye", "sudden", "blind"],
+      "condition": "Acute Ocular Emergency",
+      "action": "Immediate Ophthalmology consult and evaluation"
+    }
+  ],
+  "medical_procedures": [
+    "injection", "surgery", "blood_test", "x_ray", "mri", "scan", "bandage", 
+    "stitches", "cast", "brace", "vaccine", "dialysis", "therapy", "checkup", "biopsy"
+  ]
+}

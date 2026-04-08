@@ -1,0 +1,36 @@
+perception_agent:
+  model_path: "sign_language_interpreter/models/sign_model.keras"
+  backup_model_path: "sign_language_interpreter/models/best_model.keras"
+  encoder_path: "sign_language_interpreter/models/label_encoder.pkl"
+  max_length_path: "sign_language_interpreter/models/max_length.txt"
+  confidence_threshold: 0.70
+  sequence_length: 20
+  frame_skip: 3
+  demo_mode: false
+  camera_width: 640
+  camera_height: 480
+
+context_agent:
+  window_size: 10
+  completeness_threshold: 0.60
+  vocabulary_path: "config/medical_vocabulary.json"
+
+intent_agent:
+  clarification_threshold: 0.75
+  emergency_keywords: ["emergency", "help", "breathe", "fall", "unconscious"]
+
+dialogue_agent:
+  max_history_turns: 5
+  turn_timeout_seconds: 30
+
+tool_agent:
+  mcp_timeout_seconds: 5
+  fallback_enabled: true
+
+response_agent:
+  max_voice_words: 12
+  urgency_colors:
+    low: "green"
+    medium: "yellow"
+    high: "orange"
+    emergency: "red"

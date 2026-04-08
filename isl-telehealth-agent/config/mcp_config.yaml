@@ -1,0 +1,10 @@
+servers:
+  symptom_server:
+    script_path: "mcp_servers/symptom_server.py"
+    transport: "stdio"
+  appointment_server:
+    script_path: "mcp_servers/appointment_server.py"
+    transport: "stdio"
+  medical_notes_server:
+    script_path: "mcp_servers/medical_notes_server.py"
+    transport: "stdio"
