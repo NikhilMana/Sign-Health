@@ -1,306 +1,328 @@
-const socket = io();
-let translationFeed = document.getElementById('translationFeed');
-let doctorMessage = document.getElementById('doctorMessage');
-let sendMessageBtn = document.getElementById('sendMessageBtn');
-let sessionStatus = document.getElementById('sessionStatus');
-let messageCount = document.getElementById('messageCount');
-let messageCountStat = document.getElementById('messageCountStat');
-let sessionTime = document.getElementById('sessionTime');
-let sessionDuration = document.getElementById('sessionDuration');
-let consultationNotes = document.getElementById('consultationNotes');
-let saveNotesBtn = document.getElementById('saveNotesBtn');
-let exportNotesBtn = document.getElementById('exportNotesBtn');
-let clearFeedBtn = document.getElementById('clearFeedBtn');
-let charCount = document.getElementById('charCount');
-let audioPlayer = document.getElementById('audioPlayer');
+/**
+ * Doctor Dashboard — WebRTC video call + ISL translation feed.
+ */
 
+const socket = io();
+
+// ── DOM refs ─────────────────────────────────────────
+const remoteVideo = document.getElementById('remoteVideo');
+const localVideo = document.getElementById('localVideo');
+const videoPlaceholder = document.getElementById('videoPlaceholder');
+const patientOverlay = document.getElementById('patientOverlay');
+const sessionTimerEl = document.getElementById('sessionTimerOverlay');
+const sessionTimeEl = document.getElementById('sessionTime');
+const pipContainer = document.getElementById('pipContainer');
+const callControls = document.getElementById('callControls');
+const callStatusBar = document.getElementById('callStatusBar');
+const islToastContainer = document.getElementById('islToastContainer');
+
+const startCallBtn = document.getElementById('startCallBtn');
+const endCallBtn = document.getElementById('endCallBtn');
+const toggleMicBtn = document.getElementById('toggleMicBtn');
+const toggleCamBtn = document.getElementById('toggleCamBtn');
+
+const translationFeed = document.getElementById('translationFeed');
+const feedPlaceholder = document.getElementById('feedPlaceholder');
+const doctorMessage = document.getElementById('doctorMessage');
+const sendMessageBtn = document.getElementById('sendMessageBtn');
+const messageCountEl = document.getElementById('messageCount');
+const consultationNotes = document.getElementById('consultationNotes');
+const saveNotesBtn = document.getElementById('saveNotesBtn');
+const exportNotesBtn = document.getElementById('exportNotesBtn');
+const audioPlayer = document.getElementById('audioPlayer');
+const connectionDot = document.getElementById('connectionDot');
+const connectionLabel = document.getElementById('connectionLabel');
+
+// ── State ────────────────────────────────────────────
 let messageCounter = 0;
-let sessionStartTime = null;
+let sessionStart = null;
 let timerInterval = null;
 
-// Join doctor room on load
+// ── WebRTC setup ─────────────────────────────────────
+const rtc = new SignHealthRTC(socket, {
+    role: 'doctor',
+    localVideo: localVideo,
+    remoteVideo: remoteVideo,
+    onCallStateChange: handleCallState,
+    onConnectionStateChange: handleConnectionState,
+});
+
+// ── Initialise ───────────────────────────────────────
 window.addEventListener('load', () => {
     socket.emit('join_session', { room: 'doctor_room' });
-    sessionStartTime = Date.now();
-    startTimer();
-    
-    // Initialize UI
-    updateSessionStats();
-});
 
-// Start session timer
-function startTimer() {
-    timerInterval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
-        const minutes = Math.floor(elapsed / 60);
-        const seconds = elapsed % 60;
-        const timeString = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        
-        sessionTime.textContent = timeString;
-        sessionDuration.textContent = timeString;
-    }, 1000);
-}
-
-// Receive translations from patient
-socket.on('translation', (data) => {
-    if (data.text) {
-        messageCounter++;
-        updateMessageCount();
-        
-        const timestamp = new Date().toLocaleTimeString();
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message-item mb-3 p-3 rounded border-start border-primary border-4';
-        messageDiv.style.background = 'var(--card-bg)';
-        messageDiv.innerHTML = `
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-user-injured text-primary me-2"></i>
-                    <strong class="text-primary">Patient (Sign Language)</strong>
-                </div>
-                <small class="text-muted">${timestamp}</small>
-            </div>
-            <div class="message-text fs-5 mb-2">${data.text}</div>
-            <div class="message-meta d-flex justify-content-between align-items-center">
-                <span class="badge bg-info">
-                    <i class="fas fa-chart-line me-1"></i>
-                    Confidence: ${Math.round(data.confidence * 100)}%
-                </span>
-                <button class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyToClipboard('${data.text}')">
-                    <i class="fas fa-copy"></i>
-                </button>
-            </div>
-        `;
-        
-        // Clear placeholder if it exists
-        if (translationFeed.querySelector('.text-center')) {
-            translationFeed.innerHTML = '';
-        }
-        
-        translationFeed.appendChild(messageDiv);
-        translationFeed.scrollTop = translationFeed.scrollHeight;
-        
-        // Play audio if available
-        if (data.audio) {
-            playAudio(data.audio);
-        }
-        
-        // Auto-add to notes with timestamp
-        const noteText = `[${timestamp}] Patient: ${data.text}\\n`;
-        consultationNotes.value += noteText;
-        
-        // Show notification
-        showNotification('New patient message', data.text);
-        
-        // Update stats
-        updateSessionStats();
-    }
-});
-
-// Play audio from base64
-function playAudio(audioBase64) {
-    try {
-        audioPlayer.src = 'data:audio/mp3;base64,' + audioBase64;
-        audioPlayer.play().catch(e => console.log('Audio play failed:', e));
-    } catch (error) {
-        console.error('Audio playback error:', error);
-    }
-}
-
-// Send message to patient
-function sendDoctorMessage() {
-    const message = doctorMessage.value.trim();
-    if (message) {
-        socket.emit('doctor_message', {
-            text: message,
-            doctor_name: 'Doctor',
-            patient_room: 'patient_room'
-        });
-        
-        // Add to feed
-        const timestamp = new Date().toLocaleTimeString();
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message-item mb-3 p-3 rounded';
-        messageDiv.style.background = 'var(--success-color)';
-        messageDiv.style.color = 'white';
-        messageDiv.innerHTML = `
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-user-md me-2"></i>
-                    <strong>You (Doctor)</strong>
-                </div>
-                <small class="opacity-75">${timestamp}</small>
-            </div>
-            <div class="message-text">${message}</div>
-        `;
-        translationFeed.appendChild(messageDiv);
-        translationFeed.scrollTop = translationFeed.scrollHeight;
-        
-        // Add to notes
-        const noteText = `[${timestamp}] Doctor: ${message}\\n`;
-        consultationNotes.value += noteText;
-        
-        doctorMessage.value = '';
-        updateCharCount();
-    }
-}
-
-// Event listeners
-sendMessageBtn.addEventListener('click', sendDoctorMessage);
-
-doctorMessage.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        sendDoctorMessage();
-    }
-});
-
-doctorMessage.addEventListener('input', updateCharCount);
-
-// Character count update
-function updateCharCount() {
-    const count = doctorMessage.value.length;
-    charCount.textContent = count;
-    
-    if (count > 180) {
-        charCount.style.color = 'var(--danger-color)';
-    } else if (count > 150) {
-        charCount.style.color = 'var(--warning-color)';
-    } else {
-        charCount.style.color = 'var(--text-secondary)';
-    }
-}
-
-// Update message count
-function updateMessageCount() {
-    messageCount.textContent = messageCounter;
-    messageCountStat.textContent = messageCounter;
-}
-
-// Update session statistics
-function updateSessionStats() {
-    // Could add more stats here like average confidence, etc.
-}
-
-// Save consultation notes
-saveNotesBtn.addEventListener('click', () => {
-    const notes = consultationNotes.value;
-    if (notes.trim()) {
-        const timestamp = new Date().toISOString();
-        const savedNotes = {
-            timestamp: timestamp,
-            notes: notes,
-            messageCount: messageCounter,
-            sessionDuration: sessionDuration.textContent
-        };
-        
-        localStorage.setItem('consultation_' + timestamp, JSON.stringify(savedNotes));
-        showAlert('Consultation notes saved successfully!', 'success');
-    } else {
-        showAlert('No notes to save.', 'warning');
-    }
-});
-
-// Export session data
-exportNotesBtn.addEventListener('click', () => {
-    const sessionData = {
-        timestamp: new Date().toISOString(),
-        notes: consultationNotes.value,
-        messageCount: messageCounter,
-        sessionDuration: sessionDuration.textContent,
-        messages: Array.from(translationFeed.querySelectorAll('.message-item')).map(msg => ({
-            text: msg.querySelector('.message-text').textContent,
-            timestamp: msg.querySelector('small').textContent,
-            sender: msg.querySelector('strong').textContent
-        }))
-    };
-    
-    const dataStr = JSON.stringify(sessionData, null, 2);
-    const dataBlob = new Blob([dataStr], {type: 'application/json'});
-    
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(dataBlob);
-    link.download = `session_${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    
-    showAlert('Session data exported successfully!', 'success');
-});
-
-// Clear translation feed
-clearFeedBtn.addEventListener('click', () => {
-    if (confirm('Are you sure you want to clear the translation feed?')) {
-        translationFeed.innerHTML = `
-            <div class="text-center text-muted">
-                <i class="fas fa-user-injured fa-3x mb-3"></i>
-                <h5>Feed cleared</h5>
-                <p class="mb-0">New patient translations will appear here</p>
-            </div>
-        `;
-    }
-});
-
-// Quick phrase buttons
-document.getElementById('commonPhrase1').addEventListener('click', () => {
-    doctorMessage.value = 'How are you feeling?';
-    updateCharCount();
-});
-
-document.getElementById('commonPhrase2').addEventListener('click', () => {
-    doctorMessage.value = 'Can you describe the pain?';
-    updateCharCount();
-});
-
-document.getElementById('commonPhrase3').addEventListener('click', () => {
-    doctorMessage.value = 'Thank you for explaining';
-    updateCharCount();
-});
-
-// Utility functions
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        showAlert('Text copied to clipboard!', 'success');
-    }).catch(() => {
-        showAlert('Failed to copy text', 'danger');
-    });
-}
-
-function showAlert(message, type) {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-    alertDiv.innerHTML = `
-        <i class="fas fa-${type === 'danger' ? 'exclamation-triangle' : type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    const container = document.querySelector('.main-content .container-fluid');
-    container.insertBefore(alertDiv, container.firstChild);
-    
-    // Auto-remove after 3 seconds
-    setTimeout(() => {
-        if (alertDiv.parentNode) {
-            alertDiv.remove();
-        }
-    }, 3000);
-}
-
-function showNotification(title, body) {
-    if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification(title, {
-            body: body,
-            icon: '/static/favicon.ico'
-        });
-    }
-}
-
-// Initialize notifications
-window.addEventListener('load', () => {
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
 });
 
-// Cleanup on page unload
-window.addEventListener('beforeunload', () => {
-    if (timerInterval) {
-        clearInterval(timerInterval);
+// ── Call lifecycle ───────────────────────────────────
+
+startCallBtn.addEventListener('click', async () => {
+    try {
+        setCallStatus('connecting', 'Connecting…');
+        // Doctor uses audio-only — no camera needed (frees webcam for patient)
+        await rtc.startAudioOnlyStream();
+        showCallUI();
+        rtc.initiateCall('patient_room');
+
+        socket.emit('call_request', {
+            doctor_name: 'Doctor',
+            patient_room: 'patient_room',
+        });
+    } catch (err) {
+        console.error('Start call error:', err);
+        setCallStatus('disconnected', 'Microphone access denied');
     }
+});
+
+endCallBtn.addEventListener('click', () => {
+    rtc.endCall('patient_room');
+    hideCallUI();
+    setCallStatus('disconnected', 'Call ended');
+    stopTimer();
+});
+
+toggleMicBtn.addEventListener('click', () => {
+    const muted = rtc.toggleMute();
+    toggleMicBtn.innerHTML = muted
+        ? '<i class="fas fa-microphone-slash"></i>'
+        : '<i class="fas fa-microphone"></i>';
+    toggleMicBtn.classList.toggle('active', muted);
+});
+
+toggleCamBtn.addEventListener('click', () => {
+    const off = rtc.toggleCamera();
+    toggleCamBtn.innerHTML = off
+        ? '<i class="fas fa-video-slash"></i>'
+        : '<i class="fas fa-video"></i>';
+    toggleCamBtn.classList.toggle('active', off);
+});
+
+function handleCallState(state) {
+    switch (state) {
+        case 'calling':
+            setCallStatus('connecting', 'Calling patient…');
+            break;
+        case 'in_call':
+            setCallStatus('connected', 'In Call');
+            startTimer();
+            break;
+        case 'remote_stream_connected':
+            setCallStatus('connected', 'Patient connected');
+            videoPlaceholder.style.display = 'none';
+            remoteVideo.classList.add('connected');
+            patientOverlay.style.display = 'flex';
+            break;
+        case 'call_ended':
+            hideCallUI();
+            setCallStatus('disconnected', 'Call ended');
+            stopTimer();
+            break;
+        case 'connection_lost':
+            setCallStatus('disconnected', 'Connection lost');
+            connectionDot.className = 'dot dot-red';
+            connectionLabel.textContent = 'Disconnected';
+            break;
+    }
+}
+
+function handleConnectionState(state) {
+    if (state === 'connected') {
+        connectionDot.className = 'dot dot-green';
+        connectionLabel.textContent = 'Connected';
+    } else if (state === 'connecting') {
+        connectionDot.className = 'dot dot-amber';
+        connectionLabel.textContent = 'Connecting…';
+    }
+}
+
+function showCallUI() {
+    // Doctor is audio-only — no PiP self-view, no camera toggle
+    pipContainer.style.display = 'none';
+    toggleCamBtn.style.display = 'none';
+    callControls.style.display = 'flex';
+    sessionTimerEl.style.display = 'flex';
+    startCallBtn.style.display = 'none';
+}
+
+function hideCallUI() {
+    videoPlaceholder.style.display = 'flex';
+    patientOverlay.style.display = 'none';
+    pipContainer.style.display = 'none';
+    callControls.style.display = 'none';
+    sessionTimerEl.style.display = 'none';
+    startCallBtn.style.display = 'inline-flex';
+    remoteVideo.classList.remove('connected');
+    rtc.stopLocalStream();
+}
+
+function setCallStatus(type, text) {
+    callStatusBar.className = `call-status-bar call-status-${type}`;
+    callStatusBar.innerHTML = `<i class="fas fa-circle me-1" style="font-size:0.5rem;vertical-align:middle;"></i> ${text}`;
+}
+
+// ── Timer ─────────────────────────────────────────────
+
+function startTimer() {
+    sessionStart = Date.now();
+    timerInterval = setInterval(() => {
+        const s = Math.floor((Date.now() - sessionStart) / 1000);
+        const m = Math.floor(s / 60);
+        sessionTimeEl.textContent =
+            `${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+    }, 1000);
+}
+
+function stopTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+// ── ISL Translations ─────────────────────────────────
+
+socket.on('translation', (data) => {
+    if (!data.text) return;
+
+    messageCounter++;
+    messageCountEl.textContent = messageCounter;
+
+    // Clear placeholder
+    if (feedPlaceholder) feedPlaceholder.remove();
+
+    // Add to feed
+    const ts = new Date().toLocaleTimeString();
+    const div = document.createElement('div');
+    div.className = 'feed-message feed-message-patient';
+    div.innerHTML = `
+        <div class="msg-header">
+            <span class="msg-sender" style="color:var(--primary-color);">Patient (ISL)</span>
+            <span class="msg-time">${ts}</span>
+        </div>
+        <div class="msg-body">${data.text}</div>
+        <div class="msg-confidence">Confidence: ${Math.round(data.confidence * 100)}%</div>
+    `;
+    translationFeed.appendChild(div);
+    translationFeed.scrollTop = translationFeed.scrollHeight;
+
+    // ISL toast on video
+    showIslToast(data.text);
+
+    // Play audio
+    if (data.audio) {
+        try {
+            audioPlayer.src = 'data:audio/mp3;base64,' + data.audio;
+            audioPlayer.play().catch(() => { });
+        } catch (e) { /* ignore */ }
+    }
+
+    // Auto-append to notes
+    consultationNotes.value += `[${ts}] Patient: ${data.text}\n`;
+
+    showNotification('Patient signed', data.text);
+});
+
+function showIslToast(text) {
+    const toast = document.createElement('div');
+    toast.className = 'isl-toast';
+    toast.innerHTML = `<span class="toast-icon"><i class="fas fa-hand-paper"></i></span>${text}`;
+    islToastContainer.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('fading');
+        setTimeout(() => toast.remove(), 300);
+    }, 3500);
+}
+
+// ── Doctor messaging ─────────────────────────────────
+
+function sendDoctorMessage() {
+    const msg = doctorMessage.value.trim();
+    if (!msg) return;
+
+    socket.emit('doctor_message', {
+        text: msg,
+        doctor_name: 'Doctor',
+        patient_room: 'doctor_room',
+    });
+
+    // Add to feed
+    if (feedPlaceholder) feedPlaceholder.remove();
+
+    const ts = new Date().toLocaleTimeString();
+    const div = document.createElement('div');
+    div.className = 'feed-message feed-message-doctor';
+    div.innerHTML = `
+        <div class="msg-header">
+            <span class="msg-sender" style="color:var(--success-color);">You (Doctor)</span>
+            <span class="msg-time">${ts}</span>
+        </div>
+        <div class="msg-body">${msg}</div>
+    `;
+    translationFeed.appendChild(div);
+    translationFeed.scrollTop = translationFeed.scrollHeight;
+
+    consultationNotes.value += `[${ts}] Doctor: ${msg}\n`;
+    doctorMessage.value = '';
+}
+
+sendMessageBtn.addEventListener('click', sendDoctorMessage);
+doctorMessage.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendDoctorMessage();
+});
+
+// Quick phrases
+document.querySelectorAll('.phrase-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+        doctorMessage.value = pill.dataset.phrase;
+        doctorMessage.focus();
+    });
+});
+
+// ── Notes ────────────────────────────────────────────
+
+saveNotesBtn.addEventListener('click', () => {
+    const notes = consultationNotes.value;
+    if (notes.trim()) {
+        const ts = new Date().toISOString();
+        localStorage.setItem('consultation_' + ts, JSON.stringify({
+            timestamp: ts, notes, messageCount: messageCounter,
+        }));
+        showAlert('Notes saved!', 'success');
+    }
+});
+
+exportNotesBtn.addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify({
+        timestamp: new Date().toISOString(),
+        notes: consultationNotes.value,
+        messageCount: messageCounter,
+    }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `session_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+});
+
+// ── Utilities ────────────────────────────────────────
+
+function showAlert(message, type) {
+    const div = document.createElement('div');
+    div.className = `alert alert-${type} alert-dismissible fade show`;
+    div.innerHTML = `<i class="fas fa-check-circle me-2"></i>${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    const container = document.querySelector('.main-content .container-fluid');
+    container.insertBefore(div, container.firstChild);
+    setTimeout(() => div.remove(), 3000);
+}
+
+function showNotification(title, body) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body, icon: '/static/favicon.ico' });
+    }
+}
+
+// Cleanup
+window.addEventListener('beforeunload', () => {
+    rtc.endCall('patient_room');
+    stopTimer();
 });

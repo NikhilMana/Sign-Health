@@ -2,102 +2,130 @@
 
 {% block title %}Patient Dashboard - SignHealth{% endblock %}
 
-{% block content %}
-<div class="row g-4 mt-2">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h2 class="mb-1">Patient Dashboard</h2>
-                <p class="text-muted mb-0">Communicate with your doctor using sign language</p>
-            </div>
-            <div class="status-badge">
-                <span class="status-indicator status-inactive"></span>
-                <span class="small text-muted">Ready to connect</span>
-            </div>
-        </div>
-    </div>
-</div>
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/patient.js') }}"></script>
+{% endblock %}
 
-<div class="row g-4">
-    <!-- Video Feed Section -->
+{% block content %}
+<div class="row g-3 mt-1">
+
+    <!-- ═══ Left: Video Call Area (8 cols) ═══ -->
     <div class="col-lg-8">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="fas fa-video me-2"></i>Video Feed
-                </h5>
-                <div class="video-controls">
-                    <span id="videoStatus" class="badge bg-secondary">Disconnected</span>
+        <div class="call-container" id="callContainer">
+
+            <!-- Remote video (doctor) -->
+            <video class="video-tile-remote" id="remoteVideo" autoplay playsinline></video>
+
+            <!-- Placeholder when no call -->
+            <div class="video-placeholder" id="videoPlaceholder">
+                <div class="placeholder-icon">
+                    <i class="fas fa-user-md"></i>
                 </div>
+                <div class="placeholder-text">Waiting for doctor to call</div>
+                <div class="placeholder-sub">Your camera will activate when the call starts</div>
             </div>
-            <div class="card-body text-center">
-                <div class="video-container mb-3">
-                    <video id="videoElement" width="640" height="480" autoplay muted></video>
-                    <div class="video-overlay" id="videoOverlay">
-                        <i class="fas fa-video-slash fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">Camera not connected</p>
+
+            <!-- Doctor info overlay -->
+            <div class="patient-overlay" id="doctorOverlay" style="display:none;">
+                <div class="patient-avatar" style="background:linear-gradient(135deg,#22c55e,#16a34a);">D</div>
+                <div class="info-text">
+                    <div class="info-name">Doctor</div>
+                    <div class="info-status">
+                        <span class="dot dot-green" id="connectionDot"></span>
+                        <span id="connectionLabel">Connected</span>
                     </div>
                 </div>
-                
-                <div class="control-buttons">
-                    <button id="startBtn" class="btn btn-success btn-lg me-2">
-                        <i class="fas fa-play me-2"></i>Start Detection
-                    </button>
-                    <button id="stopBtn" class="btn btn-danger btn-lg" disabled>
-                        <i class="fas fa-stop me-2"></i>Stop Detection
-                    </button>
+            </div>
+
+            <!-- Session timer -->
+            <div class="session-timer-overlay" id="sessionTimerOverlay" style="display:none;">
+                <span class="rec-dot"></span>
+                <span id="sessionTime">00:00</span>
+            </div>
+
+            <!-- Self-view PiP with detection badge -->
+            <div class="pip-container" id="pipContainer" style="display:none;">
+                <video id="localVideo" autoplay muted playsinline></video>
+                <span class="pip-label">You</span>
+                <div class="pip-detection-badge" id="pipDetection" style="display:none;">
+                    <i class="fas fa-hand-paper me-1"></i><span id="pipSignText">—</span>
                 </div>
+            </div>
+
+            <!-- Floating control bar -->
+            <div class="call-controls" id="callControls" style="display:none;">
+                <button class="ctrl-btn ctrl-btn-default" id="toggleMicBtn" title="Toggle Microphone">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button class="ctrl-btn ctrl-btn-default" id="toggleCamBtn" title="Toggle Camera">
+                    <i class="fas fa-video"></i>
+                </button>
+                <div class="ctrl-divider"></div>
+                <button class="ctrl-btn ctrl-btn-danger" id="endCallBtn" title="End Call">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
             </div>
         </div>
     </div>
-    
-    <!-- Detection & Communication Panel -->
+
+    <!-- ═══ Right: Side Panels (4 cols) ═══ -->
     <div class="col-lg-4">
-        <!-- Detection Status -->
-        <div class="card mb-3">
-            <div class="card-header bg-info">
-                <h5 class="mb-0">
-                    <i class="fas fa-brain me-2"></i>Sign Detection
-                </h5>
+
+        <!-- Call status -->
+        <div class="call-status-bar call-status-disconnected" id="callStatusBar">
+            <i class="fas fa-circle me-1" style="font-size:0.5rem; vertical-align:middle;"></i>
+            Waiting for doctor
+        </div>
+
+        <!-- Sign Detection -->
+        <div class="glass-card">
+            <div class="glass-card-header">
+                <i class="fas fa-brain"></i>
+                Sign Detection
+                <span class="badge bg-secondary ms-auto" id="detectionBadge" style="font-size:0.7rem;">Inactive</span>
             </div>
-            <div class="card-body">
-                <div id="detectionStatus" class="alert alert-secondary mb-3">
-                    <i class="fas fa-circle-notch me-2"></i>
-                    <strong>Status:</strong> <span id="statusText">Not started</span>
-                </div>
-                
-                <div class="detection-result mb-3">
-                    <h6 class="mb-2">Current Sign:</h6>
-                    <div id="currentSign" class="text-center">
-                        <span class="text-muted">Waiting...</span>
+            <div class="glass-card-body">
+                <div id="detectionStatus" class="text-center mb-3">
+                    <div id="currentSign" style="background:var(--cream-bg); border:2px solid var(--border-color);
+                                border-radius:10px; padding:16px; font-size:1.2rem; font-weight:700;
+                                min-height:60px; display:flex; align-items:center; justify-content:center;">
+                        <span class="text-muted" style="font-weight:400; font-size:0.9rem;">Start signing to
+                            detect</span>
                     </div>
                 </div>
-                
-                <div class="confidence-meter mb-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <h6 class="mb-0">Confidence:</h6>
-                        <small id="confidenceText" class="text-muted">0%</small>
-                    </div>
-                    <div class="progress">
-                        <div id="confidenceBar" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
-                    </div>
+
+                <!-- Confidence -->
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <small class="fw-bold">Confidence</small>
+                    <small id="confidenceText" class="text-muted">0%</small>
+                </div>
+                <div class="progress mb-3" style="height:5px;">
+                    <div id="confidenceBar" class="progress-bar bg-success" role="progressbar" style="width:0%;"></div>
+                </div>
+
+                <!-- Detection toggle -->
+                <div class="d-flex gap-2">
+                    <button id="startBtn" class="btn btn-success btn-sm flex-fill">
+                        <i class="fas fa-play me-1"></i>Start Detection
+                    </button>
+                    <button id="stopBtn" class="btn btn-danger btn-sm flex-fill" disabled>
+                        <i class="fas fa-stop me-1"></i>Stop
+                    </button>
                 </div>
             </div>
         </div>
-        
-        <!-- Conversation History -->
-        <div class="card">
-            <div class="card-header bg-success">
-                <h5 class="mb-0">
-                    <i class="fas fa-comments me-2"></i>Conversation
-                </h5>
+
+        <!-- Conversation -->
+        <div class="glass-card">
+            <div class="glass-card-header">
+                <i class="fas fa-comments"></i>
+                Conversation
             </div>
-            <div class="card-body p-0">
-                <div id="conversationHistory" class="p-3">
-                    <div class="text-center text-muted">
-                        <i class="fas fa-comment-dots fa-2x mb-2"></i>
-                        <p class="mb-0">No messages yet</p>
-                        <small>Start signing to begin conversation</small>
+            <div class="glass-card-body p-0">
+                <div class="translation-feed p-3" id="conversationHistory">
+                    <div class="text-center text-muted py-3" id="convPlaceholder">
+                        <i class="fas fa-comment-dots fa-2x mb-2 d-block" style="opacity:0.3;"></i>
+                        <small>Messages will appear here</small>
                     </div>
                 </div>
             </div>
@@ -107,6 +135,4 @@
 
 <!-- Audio Player (hidden) -->
 <audio id="audioPlayer" style="display: none;"></audio>
-
-<script src="{{ url_for('static', filename='js/patient.js') }}"></script>
 {% endblock %}

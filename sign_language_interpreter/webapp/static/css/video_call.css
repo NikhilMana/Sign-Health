@@ -1,0 +1,702 @@
+/* ═══════════════════════════════════════════════════════
+   SignHealth — Premium Telehealth Video Call Interface
+   Glassmorphism · Dark accents · Micro-animations
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Video Call Container ──────────────────────────── */
+
+.call-container {
+    position: relative;
+    background: #0a0e1a;
+    border-radius: 16px;
+    overflow: hidden;
+    min-height: 520px;
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.06),
+        0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Remote (large) video tile ──────────────────────── */
+
+.video-tile-remote {
+    width: 100%;
+    height: 100%;
+    min-height: 520px;
+    object-fit: cover;
+    background: linear-gradient(135deg, #0f1729 0%, #1a1f3a 50%, #0f1729 100%);
+    display: block;
+}
+
+.video-tile-remote.connected {
+    border: none;
+}
+
+/* ── Self-view PiP ─────────────────────────────────── */
+
+.pip-container {
+    position: absolute;
+    bottom: 90px;
+    right: 16px;
+    width: 200px;
+    height: 150px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.5),
+        0 0 0 2px rgba(255, 255, 255, 0.1);
+    z-index: 20;
+    cursor: grab;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pip-container:hover {
+    transform: scale(1.05);
+    box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.6),
+        0 0 0 2px rgba(37, 99, 235, 0.5);
+}
+
+.pip-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    background: #1e2340;
+}
+
+.pip-label {
+    position: absolute;
+    bottom: 6px;
+    left: 8px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+/* ── Patient Info Overlay ──────────────────────────── */
+
+.patient-overlay {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    z-index: 15;
+    transition: all 0.3s ease;
+}
+
+.patient-overlay:hover {
+    background: rgba(15, 23, 42, 0.8);
+}
+
+.patient-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.patient-overlay .info-text {
+    line-height: 1.3;
+}
+
+.patient-overlay .info-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #f1f5f9;
+}
+
+.patient-overlay .info-status {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.patient-overlay .info-status .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.dot-green {
+    background: #22c55e;
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+    animation: pulse-dot 2s infinite;
+}
+
+.dot-amber {
+    background: #f59e0b;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
+}
+
+.dot-red {
+    background: #ef4444;
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ── Session Timer (top-right on video) ────────────── */
+
+.session-timer-overlay {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    padding: 6px 14px;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    z-index: 15;
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.session-timer-overlay .rec-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+    animation: pulse-dot 1.5s infinite;
+}
+
+/* ── Floating Control Bar ──────────────────────────── */
+
+.call-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 20px;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50px;
+    z-index: 25;
+    transition: all 0.3s ease;
+}
+
+.call-controls:hover {
+    background: rgba(15, 23, 42, 0.85);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.ctrl-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.ctrl-btn:active {
+    transform: scale(0.92);
+}
+
+.ctrl-btn-default {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f1f5f9;
+}
+
+.ctrl-btn-default:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.ctrl-btn-default.active {
+    background: rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+}
+
+.ctrl-btn-danger {
+    background: #ef4444;
+    color: #fff;
+    width: 56px;
+    height: 56px;
+    font-size: 1.3rem;
+}
+
+.ctrl-btn-danger:hover {
+    background: #dc2626;
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+.ctrl-btn-success {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    width: 56px;
+    height: 56px;
+    font-size: 1.3rem;
+}
+
+.ctrl-btn-success:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+}
+
+.ctrl-divider {
+    width: 1px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.15);
+    margin: 0 4px;
+}
+
+/* ── Placeholder (no call) ─────────────────────────── */
+
+.video-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: linear-gradient(135deg, #0f1729 0%, #1a1f3a 50%, #0f1729 100%);
+    z-index: 10;
+}
+
+.video-placeholder .placeholder-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.1);
+    border: 2px solid rgba(99, 102, 241, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: #6366f1;
+    animation: breathe 3s ease-in-out infinite;
+}
+
+@keyframes breathe {
+    0%, 100% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.05); opacity: 1; }
+}
+
+.video-placeholder .placeholder-text {
+    color: #94a3b8;
+    font-size: 1rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+.video-placeholder .placeholder-sub {
+    color: #64748b;
+    font-size: 0.8rem;
+}
+
+/* ── ISL Translation Toast ─────────────────────────── */
+
+.isl-toast-container {
+    position: absolute;
+    bottom: 90px;
+    left: 16px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 300px;
+}
+
+.isl-toast {
+    padding: 10px 16px;
+    background: rgba(34, 197, 94, 0.15);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 10px;
+    color: #bbf7d0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    animation: toast-in 0.4s ease-out;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.isl-toast .toast-icon {
+    font-size: 0.75rem;
+    color: #22c55e;
+}
+
+.isl-toast.fading {
+    animation: toast-out 0.3s ease-in forwards;
+}
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toast-out {
+    from { opacity: 1; transform: translateY(0); }
+    to   { opacity: 0; transform: translateY(-8px); }
+}
+
+/* ── Detection badge on PiP ────────────────────────── */
+
+.pip-detection-badge {
+    position: absolute;
+    top: 6px;
+    left: 8px;
+    right: 8px;
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #22c55e;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ── Side Panel Cards (glassmorphic) ───────────────── */
+
+.glass-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+}
+
+.glass-card:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+}
+
+.glass-card-header {
+    padding: 14px 18px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.glass-card-header i {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+.glass-card-body {
+    padding: 16px 18px;
+}
+
+/* ── Translation Feed (inside glass card) ──────────── */
+
+.translation-feed {
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+    scroll-behavior: smooth;
+}
+
+.translation-feed::-webkit-scrollbar {
+    width: 4px;
+}
+
+.translation-feed::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 2px;
+}
+
+.feed-message {
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    animation: msg-in 0.3s ease-out;
+}
+
+@keyframes msg-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.feed-message-patient {
+    background: rgba(37, 99, 235, 0.08);
+    border-left: 3px solid var(--primary-color);
+}
+
+.feed-message-doctor {
+    background: rgba(16, 185, 129, 0.08);
+    border-left: 3px solid var(--success-color);
+}
+
+.feed-message .msg-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.feed-message .msg-sender {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.feed-message .msg-time {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.feed-message .msg-body {
+    font-weight: 500;
+}
+
+.feed-message .msg-confidence {
+    margin-top: 4px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+/* ── Quick Phrase Pills ────────────────────────────── */
+
+.phrase-pill {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background: var(--cream-bg);
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 0 4px 8px 0;
+}
+
+.phrase-pill:hover {
+    background: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+/* ── Doctor Input Bar ──────────────────────────────── */
+
+.doctor-input-bar {
+    display: flex;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+    margin-top: 12px;
+}
+
+.doctor-input-bar input {
+    flex: 1;
+    border-radius: 24px;
+    padding: 10px 18px;
+    font-size: 0.85rem;
+    border: 1px solid var(--border-color);
+    background: var(--cream-bg);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.doctor-input-bar input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    outline: none;
+}
+
+.doctor-input-bar .send-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary-color);
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.doctor-input-bar .send-btn:hover {
+    background: #1d4ed8;
+    transform: scale(1.08);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* ── Call Status Banner ────────────────────────────── */
+
+.call-status-bar {
+    text-align: center;
+    padding: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.call-status-connected {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.call-status-disconnected {
+    background: rgba(100, 116, 139, 0.1);
+    color: #64748b;
+    border: 1px solid rgba(100, 116, 139, 0.2);
+}
+
+.call-status-connecting {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* ── Consultation Notes ────────────────────────────── */
+
+.notes-textarea {
+    width: 100%;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    background: var(--cream-bg);
+    color: var(--text-primary);
+    resize: vertical;
+    min-height: 120px;
+    transition: border-color 0.2s ease;
+}
+
+.notes-textarea:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+    outline: none;
+}
+
+/* ── Responsive ────────────────────────────────────── */
+
+@media (max-width: 992px) {
+    .call-container {
+        min-height: 360px;
+    }
+
+    .video-tile-remote {
+        min-height: 360px;
+    }
+
+    .pip-container {
+        width: 140px;
+        height: 105px;
+        bottom: 80px;
+        right: 10px;
+    }
+
+    .ctrl-btn {
+        width: 42px;
+        height: 42px;
+        font-size: 1rem;
+    }
+
+    .ctrl-btn-danger,
+    .ctrl-btn-success {
+        width: 48px;
+        height: 48px;
+    }
+}
+
+@media (max-width: 576px) {
+    .call-container {
+        border-radius: 10px;
+        min-height: 280px;
+    }
+
+    .video-tile-remote {
+        min-height: 280px;
+    }
+
+    .pip-container {
+        width: 110px;
+        height: 82px;
+        bottom: 74px;
+        right: 8px;
+    }
+
+    .call-controls {
+        padding: 8px 14px;
+        gap: 8px;
+    }
+
+    .ctrl-btn {
+        width: 38px;
+        height: 38px;
+        font-size: 0.9rem;
+    }
+
+    .ctrl-btn-danger,
+    .ctrl-btn-success {
+        width: 44px;
+        height: 44px;
+    }
+
+    .patient-overlay {
+        top: 10px;
+        left: 10px;
+        padding: 8px 12px;
+    }
+}

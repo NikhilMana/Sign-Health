@@ -2,179 +2,143 @@
 
 {% block title %}Doctor Dashboard - SignHealth{% endblock %}
 
-{% block content %}
-<div class="row g-4 mt-2">
-    <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h2 class="mb-1">Doctor Dashboard</h2>
-                <p class="text-muted mb-0">Monitor patient communication in real-time</p>
-            </div>
-            <div class="session-info d-flex align-items-center">
-                <span class="status-indicator status-active me-2"></span>
-                <div class="text-end">
-                    <div class="fw-bold">Session Active</div>
-                    <small class="text-muted" id="sessionTime">00:00</small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/doctor.js') }}"></script>
+{% endblock %}
 
-<div class="row g-4">
-    <!-- Translation Feed -->
+{% block content %}
+<div class="row g-3 mt-1">
+
+    <!-- ═══ Left: Video Call Area (8 cols) ═══ -->
     <div class="col-lg-8">
-        <div class="card h-100">
-            <div class="card-header bg-success d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="fas fa-language me-2"></i>Patient Communication
-                </h5>
-                <div class="d-flex align-items-center">
-                    <span class="badge bg-light text-dark me-2">
-                        <i class="fas fa-envelope me-1"></i>
-                        <span id="messageCount">0</span> messages
-                    </span>
-                    <button class="btn btn-sm btn-outline-light" id="clearFeedBtn" title="Clear feed">
-                        <i class="fas fa-trash"></i>
-                    </button>
+        <div class="call-container" id="callContainer">
+
+            <!-- Remote video (patient) -->
+            <video class="video-tile-remote" id="remoteVideo" autoplay playsinline></video>
+
+            <!-- Placeholder when no call -->
+            <div class="video-placeholder" id="videoPlaceholder">
+                <div class="placeholder-icon">
+                    <i class="fas fa-user-injured"></i>
+                </div>
+                <div class="placeholder-text">No active video call</div>
+                <div class="placeholder-sub">Start a call to see the patient</div>
+                <button class="ctrl-btn ctrl-btn-success mt-3" id="startCallBtn" title="Start Video Call"
+                    style="width:auto; border-radius:24px; padding:12px 28px; font-size:0.95rem;">
+                    <i class="fas fa-phone me-2"></i>Start Call
+                </button>
+            </div>
+
+            <!-- Patient info overlay -->
+            <div class="patient-overlay" id="patientOverlay" style="display:none;">
+                <div class="patient-avatar">P</div>
+                <div class="info-text">
+                    <div class="info-name">Patient</div>
+                    <div class="info-status">
+                        <span class="dot dot-green" id="connectionDot"></span>
+                        <span id="connectionLabel">Connected</span>
+                    </div>
                 </div>
             </div>
-            <div class="card-body d-flex flex-column">
-                <div id="translationFeed" class="flex-grow-1 mb-3 p-3">
-                    <div class="text-center text-muted">
-                        <i class="fas fa-user-injured fa-3x mb-3"></i>
-                        <h5>Waiting for patient...</h5>
-                        <p class="mb-0">Patient translations will appear here when they start signing</p>
-                    </div>
-                </div>
-                
-                <!-- Doctor Response Input -->
-                <div class="doctor-input">
-                    <div class="input-group">
-                        <input type="text" id="doctorMessage" class="form-control" 
-                               placeholder="Type your response to patient..." maxlength="200">
-                        <button id="sendMessageBtn" class="btn btn-primary">
-                            <i class="fas fa-paper-plane me-1"></i>Send
-                        </button>
-                    </div>
-                    <div class="d-flex justify-content-between mt-2">
-                        <small class="text-muted">Press Enter to send</small>
-                        <small class="text-muted"><span id="charCount">0</span>/200</small>
-                    </div>
-                </div>
+
+            <!-- Session timer -->
+            <div class="session-timer-overlay" id="sessionTimerOverlay" style="display:none;">
+                <span class="rec-dot"></span>
+                <span id="sessionTime">00:00</span>
+            </div>
+
+            <!-- ISL translation toasts -->
+            <div class="isl-toast-container" id="islToastContainer"></div>
+
+            <!-- Self-view PiP -->
+            <div class="pip-container" id="pipContainer" style="display:none;">
+                <video id="localVideo" autoplay muted playsinline></video>
+                <span class="pip-label">You</span>
+            </div>
+
+            <!-- Floating control bar -->
+            <div class="call-controls" id="callControls" style="display:none;">
+                <button class="ctrl-btn ctrl-btn-default" id="toggleMicBtn" title="Toggle Microphone">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button class="ctrl-btn ctrl-btn-default" id="toggleCamBtn" title="Toggle Camera">
+                    <i class="fas fa-video"></i>
+                </button>
+                <div class="ctrl-divider"></div>
+                <button class="ctrl-btn ctrl-btn-danger" id="endCallBtn" title="End Call">
+                    <i class="fas fa-phone-slash"></i>
+                </button>
             </div>
         </div>
     </div>
-    
-    <!-- Sidebar -->
+
+    <!-- ═══ Right: Side Panels (4 cols) ═══ -->
     <div class="col-lg-4">
-        <!-- Session Statistics -->
-        <div class="card mb-3">
-            <div class="card-header bg-info">
-                <h5 class="mb-0">
-                    <i class="fas fa-chart-line me-2"></i>Session Stats
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-6">
-                        <div class="stat-item">
-                            <div class="stat-number" id="sessionStatus">Active</div>
-                            <div class="stat-label">Status</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="stat-item">
-                            <div class="stat-number" id="messageCountStat">0</div>
-                            <div class="stat-label">Messages</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <hr class="my-3">
-                
-                <div class="d-flex justify-content-between align-items-center">
-                    <span class="text-muted">Session Duration:</span>
-                    <span class="fw-bold" id="sessionDuration">00:00</span>
-                </div>
-            </div>
+
+        <!-- Call status -->
+        <div class="call-status-bar call-status-disconnected" id="callStatusBar">
+            <i class="fas fa-circle me-1" style="font-size:0.5rem; vertical-align:middle;"></i>
+            Waiting for call
         </div>
-        
-        <!-- Quick Actions -->
-        <div class="card mb-3">
-            <div class="card-header bg-warning">
-                <h5 class="mb-0">
-                    <i class="fas fa-bolt me-2"></i>Quick Actions
-                </h5>
+
+        <!-- Translation Feed -->
+        <div class="glass-card">
+            <div class="glass-card-header">
+                <i class="fas fa-language"></i>
+                Patient Communication
+                <span class="badge bg-primary ms-auto" style="font-size:0.7rem;">
+                    <span id="messageCount">0</span>
+                </span>
             </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <button class="btn btn-outline-primary btn-sm" id="commonPhrase1">
-                        <i class="fas fa-comment me-2"></i>"How are you feeling?"
-                    </button>
-                    <button class="btn btn-outline-primary btn-sm" id="commonPhrase2">
-                        <i class="fas fa-comment me-2"></i>"Can you describe the pain?"
-                    </button>
-                    <button class="btn btn-outline-primary btn-sm" id="commonPhrase3">
-                        <i class="fas fa-comment me-2"></i>"Thank you for explaining"
+            <div class="glass-card-body">
+                <div class="translation-feed" id="translationFeed">
+                    <div class="text-center text-muted py-4" id="feedPlaceholder">
+                        <i class="fas fa-comment-dots fa-2x mb-2 d-block" style="opacity:0.3;"></i>
+                        <small>Translations appear here when the patient signs</small>
+                    </div>
+                </div>
+
+                <!-- Quick phrases -->
+                <div class="mt-3">
+                    <div class="phrase-pill" data-phrase="How are you feeling?">How are you feeling?</div>
+                    <div class="phrase-pill" data-phrase="Can you describe the pain?">Describe the pain?</div>
+                    <div class="phrase-pill" data-phrase="Thank you for explaining">Thank you</div>
+                    <div class="phrase-pill" data-phrase="Please continue">Please continue</div>
+                </div>
+
+                <!-- Doctor input -->
+                <div class="doctor-input-bar">
+                    <input type="text" id="doctorMessage" placeholder="Type a response…" maxlength="200">
+                    <button class="send-btn" id="sendMessageBtn" title="Send">
+                        <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
             </div>
         </div>
-        
+
         <!-- Consultation Notes -->
-        <div class="card">
-            <div class="card-header bg-secondary">
-                <h5 class="mb-0">
-                    <i class="fas fa-notes-medical me-2"></i>Consultation Notes
-                </h5>
+        <div class="glass-card">
+            <div class="glass-card-header">
+                <i class="fas fa-notes-medical"></i>
+                Consultation Notes
             </div>
-            <div class="card-body">
-                <textarea id="consultationNotes" class="form-control mb-3" rows="8" 
-                          placeholder="Enter consultation notes and observations..."></textarea>
-                <div class="d-grid gap-2">
-                    <button id="saveNotesBtn" class="btn btn-success">
-                        <i class="fas fa-save me-2"></i>Save Notes
+            <div class="glass-card-body">
+                <textarea id="consultationNotes" class="notes-textarea" rows="5"
+                    placeholder="Enter observations and notes…"></textarea>
+                <div class="d-flex gap-2 mt-2">
+                    <button id="saveNotesBtn" class="btn btn-sm btn-success flex-fill">
+                        <i class="fas fa-save me-1"></i>Save
                     </button>
-                    <button id="exportNotesBtn" class="btn btn-outline-secondary">
-                        <i class="fas fa-download me-2"></i>Export Session
+                    <button id="exportNotesBtn" class="btn btn-sm btn-outline-secondary flex-fill">
+                        <i class="fas fa-download me-1"></i>Export
                     </button>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 
 <!-- Audio Player (hidden) -->
 <audio id="audioPlayer" style="display: none;"></audio>
-
-<script src="{{ url_for('static', filename='js/doctor.js') }}"></script>
-
-<style>
-.stat-item {
-    padding: 0.5rem 0;
-}
-
-.stat-number {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--primary-color);
-}
-
-.stat-label {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.doctor-input {
-    border-top: 1px solid var(--border-color);
-    padding-top: 1rem;
-}
-
-#translationFeed {
-    min-height: 400px;
-}
-</style>
 {% endblock %}
