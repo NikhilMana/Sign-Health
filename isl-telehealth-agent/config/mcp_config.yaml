@@ -8,3 +8,7 @@ servers:
   medical_notes_server:
     script_path: "mcp_servers/medical_notes_server.py"
     transport: "stdio"
+
+  isl_master_server:
+    script_path: "mcp_servers/isl_telehealth_mcp.py"
+    transport: "stdio"

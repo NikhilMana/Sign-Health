@@ -431,6 +431,7 @@
     <div class="panel">
         <div class="header-box">
             <h2>Agent Pipeline Status</h2>
+            <div id="connection-status" style="font-size: 11px; margin-bottom: 10px; color: var(--color-red);">● Offline - Backend Not Found</div>
             <div class="pipeline-status">
                 <div class="agent-node" id="agent-perception"><div class="dot"></div> Perception</div>
                 <div class="agent-node" id="agent-context"><div class="dot"></div> Context</div>
@@ -478,62 +479,120 @@
 
 <script>
     // ---------------------------------------------------------
-    // 1. WEBCAM INITIALIZATION
+    // 1. WEBCAM INITIALIZATION (Browser owns the camera)
     // ---------------------------------------------------------
+    const video = document.getElementById('webcam');
+    const captureCanvas = document.createElement('canvas');
+    captureCanvas.width = 640;
+    captureCanvas.height = 480;
+    const captureCtx = captureCanvas.getContext('2d');
+
+    let webcamReady = false;
+    let frameInterval = null;
+
     async function initWebcam() {
         try {
-            // Note: In reality, main.py captures the webcam via cv2 and handles the landmarks
-            // in a Python-driven window rather than streaming the video overlay back over WS.
-            // But we can ask permissions here just in case they're using a generic local stream
-            // setup or eventually map it to WebRTC.
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { width: 640, height: 480, facingMode: "user" } 
             });
-            document.getElementById('webcam').srcObject = stream;
+            video.srcObject = stream;
+            video.onloadedmetadata = () => {
+                webcamReady = true;
+                appendSystemLog("Webcam active. Streaming frames to backend...");
+            };
         } catch (err) {
             console.error("Webcam access denied or unavailable: ", err);
+            appendSystemLog("ERROR: Could not access webcam. Please allow camera permissions.");
         }
     }
     initWebcam();
 
     // ---------------------------------------------------------
-    // 2. BACKEND WEBSOCKET INTEGRATION
+    // 2. BACKEND WEBSOCKET (Bidirectional)
     // ---------------------------------------------------------
-    const ws = new WebSocket('ws://localhost:8765');
-    
-    ws.onopen = () => {
-        appendSystemLog("Connected to ISL Telehealth multi-agent backend.");
-    };
-    
-    ws.onclose = () => {
-        appendSystemLog("Disconnected from backend server. Trying to reconnect...");
-    };
+    let ws = null;
+    let wsConnected = false;
 
-    ws.onmessage = (event) => {
-        try {
-            const msg = JSON.parse(event.data);
-            routeBrokerMessage(msg);
-        } catch (e) {
-            console.error("JSON parse failure on WS message: ", e);
+    function connectWebSocket() {
+        ws = new WebSocket('ws://localhost:8765');
+
+        ws.onopen = () => {
+            wsConnected = true;
+            appendSystemLog("Connected to ISL Telehealth multi-agent backend.");
+            const status = document.getElementById('connection-status');
+            status.textContent = "● Online - Live with Backend";
+            status.style.color = "var(--color-green)";
+
+            // Start sending frames now that both webcam and WS are ready
+            startFrameSender();
+        };
+
+        ws.onclose = () => {
+            wsConnected = false;
+            stopFrameSender();
+            appendSystemLog("Disconnected from backend. Reconnecting in 3s...");
+            const status = document.getElementById('connection-status');
+            status.textContent = "● Offline - Backend Not Found";
+            status.style.color = "var(--color-red)";
+            setTimeout(connectWebSocket, 3000);
+        };
+
+        ws.onerror = () => {
+            // onclose will fire after this, no need to duplicate logic
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+                routeBrokerMessage(msg);
+            } catch (e) {
+                console.error("JSON parse failure on WS message: ", e);
+            }
+        };
+    }
+    connectWebSocket();
+
+    // ---------------------------------------------------------
+    // 3. FRAME SENDER (Browser → Backend)
+    // ---------------------------------------------------------
+    function startFrameSender() {
+        if (frameInterval) return; // Already running
+
+        // Send ~5 frames per second (200ms interval)
+        frameInterval = setInterval(() => {
+            if (!webcamReady || !wsConnected || ws.readyState !== WebSocket.OPEN) return;
+
+            captureCtx.drawImage(video, 0, 0, 640, 480);
+            const dataUrl = captureCanvas.toDataURL('image/jpeg', 0.6); // 60% quality for speed
+
+            ws.send(JSON.stringify({
+                type: "frame",
+                data: dataUrl
+            }));
+        }, 200);
+    }
+
+    function stopFrameSender() {
+        if (frameInterval) {
+            clearInterval(frameInterval);
+            frameInterval = null;
         }
-    };
+    }
 
     // ---------------------------------------------------------
-    // 3. UI DOM MANIPULATORS
+    // 4. UI DOM MANIPULATORS
     // ---------------------------------------------------------
     
-    // Status Dot Pulse
     function pulseAgentNode(agentName) {
         const node = document.getElementById(`agent-${agentName.toLowerCase()}`);
         if(node) {
             node.classList.add('active');
             setTimeout(() => {
                 node.classList.remove('active');
-            }, 1000); // 1s active duration
+            }, 1000);
         }
     }
 
-    // Chat Feed
     function appendChatBubble(speaker, text) {
         const feed = document.getElementById('chat-feed');
         const startupMsg = document.getElementById('startup-msg');
@@ -544,7 +603,7 @@
         bubble.textContent = text;
         
         feed.appendChild(bubble);
-        feed.scrollTop = feed.scrollHeight; // Auto-scroll
+        feed.scrollTop = feed.scrollHeight;
     }
 
     function appendSystemLog(text) {
@@ -559,16 +618,14 @@
         feed.scrollTop = feed.scrollHeight;
     }
 
-    // Response UI Box Update
     function updateDoctorResponseCard(cardData, urgencyColor) {
         const cardTarget = document.getElementById('patient-card');
-        cardTarget.style.display = 'flex'; // Un-hide
+        cardTarget.style.display = 'flex';
         
         document.getElementById('pc-icon').textContent = cardData.icon || 'ℹ️';
         document.getElementById('pc-headline').textContent = cardData.headline || 'Medical Update';
         document.getElementById('pc-detail').textContent = cardData.detail || '';
         
-        // Wipe old color borders and drop shadows
         cardTarget.className = 'doctor-card';
         if(urgencyColor) {
             cardTarget.classList.add(`border-${urgencyColor}`);
@@ -576,33 +633,29 @@
     }
 
     // ---------------------------------------------------------
-    // 4. MESSAGE ROUTER
+    // 5. MESSAGE ROUTER (Backend → Frontend)
     // ---------------------------------------------------------
     function routeBrokerMessage(msg) {
-        if (!msg.topic || !msg.message) return;
-
         const topic = msg.topic;
-        const payload = msg.message;
+        if (!topic) return;
 
         // AGENT STATUS / BUFFER
         if (topic === 'agent_status') {
-            if (payload.pipeline_status === 'buffering') {
+            if (msg.pipeline_status === 'buffering') {
                 pulseAgentNode('perception');
                 
-                // Circular Buffer handling
-                let fc = payload.buffer_count || 0;
-                // Map 0-20 frames to 100-0 offset (100 offset = 0 progress stroke length)
+                let fc = msg.buffer_count || 0;
                 let offset = 100 - ((fc / 20) * 100);
                 if (offset < 0) offset = 0;
                 
                 document.getElementById('buffer-circle').style.strokeDashoffset = offset;
                 document.getElementById('buffer-text').textContent = `${fc}/20`;
             }
-            if (payload.pipeline_status === 'collecting_signs') {
+            if (msg.pipeline_status === 'collecting_signs') {
                 pulseAgentNode('context');
                 
-                if (payload.complaint) {
-                    const cmp = payload.complaint;
+                if (msg.complaint) {
+                    const cmp = msg.complaint;
                     document.getElementById('val-body_part').textContent = cmp.body_part || '--';
                     document.getElementById('val-symptom').textContent = cmp.symptom || '--';
                     document.getElementById('val-duration').textContent = cmp.duration || '--';
@@ -618,16 +671,13 @@
         if (topic === 'sign_detected') {
             pulseAgentNode('perception');
             
-            // Full buffer visualization
             document.getElementById('buffer-circle').style.strokeDashoffset = 0;
             document.getElementById('buffer-text').textContent = `20/20`;
 
-            // Render predictions
-            if (payload.top_predictions && payload.top_predictions.length > 0) {
-                const top = payload.top_predictions[0];
+            if (msg.top3 && msg.top3.length > 0) {
+                const top = msg.top3[0];
                 document.getElementById('top-sign-text').textContent = top.sign;
                 
-                // Set Confidence color dynamically
                 const confPct = Math.round(top.confidence * 100);
                 const confBar = document.getElementById('top-sign-conf-bar');
                 confBar.style.width = `${confPct}%`;
@@ -636,10 +686,9 @@
                 else if (confPct > 50) confBar.style.backgroundColor = 'var(--color-yellow)';
                 else confBar.style.backgroundColor = 'var(--color-red)';
                 
-                // Write list items
                 const listRoot = document.getElementById('predictions-list');
                 listRoot.innerHTML = '';
-                payload.top_predictions.forEach(pred => {
+                msg.top3.forEach(pred => {
                     const li = document.createElement('li');
                     li.innerHTML = `<span>${pred.sign}</span><span>${Math.round(pred.confidence * 100)}%</span>`;
                     listRoot.appendChild(li);
@@ -650,52 +699,40 @@
         // CONTEXT COMPLAINT
         if (topic === 'complaint_ready') {
             pulseAgentNode('context');
-            if (payload.complaint) {
-                const cmp = payload.complaint;
-                document.getElementById('val-body_part').textContent = cmp.body_part || '--';
-                document.getElementById('val-symptom').textContent = cmp.symptom || '--';
-                document.getElementById('val-duration').textContent = cmp.duration || '--';
-                
-                if (cmp.raw_signs && cmp.raw_signs.length > 0) {
-                    appendChatBubble('patient', `${cmp.raw_signs.join(' + ')}`);
-                }
-            }
+            const cmp = msg;
+            document.getElementById('val-body_part').textContent = cmp.body_part || '--';
+            document.getElementById('val-symptom').textContent = cmp.symptom || '--';
+            document.getElementById('val-duration').textContent = cmp.duration || '--';
         }
         
         // EMERGENCY TRIGGERED
         if (topic === 'emergency_triggered') {
             pulseAgentNode('intent');
-            const banner = document.getElementById('emergency-banner');
-            banner.style.display = 'block';
+            document.getElementById('emergency-banner').style.display = 'block';
         }
 
         // INTENT STAGE
         if (topic === 'intent_classified') {
             pulseAgentNode('intent');
-            // If it's not an emergency, we hide the banner just in case
-            if (payload.intent !== 'EMERGENCY_ALERT') {
+            if (msg.intent !== 'EMERGENCY_ALERT') {
                 document.getElementById('emergency-banner').style.display = 'none';
             } else {
                 document.getElementById('emergency-banner').style.display = 'block';
             }
         }
         
-        // RESPONSE CAP OFF
+        // RESPONSE
         if (topic === 'response_ready') {
-            // Visualize the final stages executing sequentially
             pulseAgentNode('dialogue');
             setTimeout(() => pulseAgentNode('tool'), 300);
             setTimeout(() => pulseAgentNode('response'), 600);
             
-            const res = payload;
-            
-            // Sync the feed additions visually alongside the node pulses
             setTimeout(() => {
-                if (res.text_response) {
-                    appendChatBubble('doctor', res.text_response);
+                if (msg.text_response) {
+                    appendChatBubble('doctor', msg.text_response);
                 }
-                if (res.patient_card) {
-                    updateDoctorResponseCard(res.patient_card, res.urgency_color);
+                if (msg.patient_card) {
+                    updateDoctorResponseCard(msg.patient_card, msg.urgency_color);
                 }
             }, 800);
         }
@@ -704,3 +741,4 @@
 </script>
 </body>
 </html>
+

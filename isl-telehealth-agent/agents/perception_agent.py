@@ -10,7 +10,12 @@ import random
 import logging
 import numpy as np
 import tensorflow as tf
-import mediapipe as mp
+try:
+    import mediapipe as mp
+    _MP_AVAILABLE = True
+except ImportError:
+    mp = None
+    _MP_AVAILABLE = False
 from collections import deque, Counter
 from typing import Dict, Any, List, Optional, Tuple
 
@@ -29,7 +34,7 @@ class PerceptionAgent:
         Args:
             config_path (str): Optional path to config file.
         """
-        self.demo_mode = False
+        self.demo_mode = True
         self.demo_index = 0
         self.frame_count = 0
         
@@ -64,6 +69,9 @@ class PerceptionAgent:
 
         # Initialize MediaPipe Holistic
         try:
+            if not _MP_AVAILABLE:
+                raise ImportError("MediaPipe is not installed.")
+                
             self.mp_holistic = mp.solutions.holistic
             self.mp_drawing = mp.solutions.drawing_utils
             self.holistic = self.mp_holistic.Holistic(
@@ -71,6 +79,7 @@ class PerceptionAgent:
                 min_detection_confidence=0.5,
                 min_tracking_confidence=0.5
             )
+            logger.info("MediaPipe Holistic initialized successfully.")
         except Exception as e:
             logger.warning(f"MediaPipe Holistic unavailable: {e}. Landmarks disabled.")
             if not self.demo_mode:
@@ -91,11 +100,21 @@ class PerceptionAgent:
         Returns:
             np.ndarray: Concatenated array of shape (258,).
         """
-        pose = np.array([[lm.x, lm.y, lm.z, lm.visibility] for lm in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else np.zeros(132)
-        left_hand = np.array([[lm.x, lm.y, lm.z] for lm in results.left_hand_landmarks.landmark]).flatten() if results.left_hand_landmarks else np.zeros(63)
-        right_hand = np.array([[lm.x, lm.y, lm.z] for lm in results.right_hand_landmarks.landmark]).flatten() if results.right_hand_landmarks else np.zeros(63)
-        
-        return np.concatenate([pose, left_hand, right_hand])
+        pose = np.zeros(33 * 4)
+        face = np.zeros(468 * 3)
+        lh = np.zeros(21 * 3)
+        rh = np.zeros(21 * 3)
+
+        if results.pose_landmarks:
+            pose = np.array([[res.x, res.y, res.z, res.visibility] for res in results.pose_landmarks.landmark]).flatten()
+        if results.face_landmarks:
+            face = np.array([[res.x, res.y, res.z] for res in results.face_landmarks.landmark]).flatten()
+        if results.left_hand_landmarks:
+            lh = np.array([[res.x, res.y, res.z] for res in results.left_hand_landmarks.landmark]).flatten()
+        if results.right_hand_landmarks:
+            rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark]).flatten()
+
+        return np.concatenate([pose, face, lh, rh])
 
     def process_frame(self, frame: np.ndarray) -> Dict[str, Any]:
         """
@@ -140,11 +159,11 @@ class PerceptionAgent:
             res["ready"] = True # Aligning format with orchestration backwards-compatibility
             return res
             
-        sequence_array = np.array(self.sequence) # Dimension: (20, 258)
+        sequence_array = np.array(self.sequence) # Dimension: (20, 1662)
         
         # Pad at the end with zeros to match MAX_SEQ_LENGTH_CAP = 60
         padded = np.pad(sequence_array, ((0, 40), (0, 0)), mode='constant')
-        model_input = padded.reshape(1, 60, 258)
+        model_input = padded.reshape(1, 60, 1662)
         
         output = self.model.predict(model_input, verbose=0)[0]
         top3_indices = np.argsort(output)[-3:][::-1]

@@ -15,7 +15,7 @@ if gpus:
         tf.config.experimental.set_memory_growth(gpu, True)
 
 def load_data():
-    mp_data_path = Path("MP_DATA_QUALITY")
+    mp_data_path = Path("MP_DATA")
     sequences, labels = [], []
     
     for class_dir in mp_data_path.iterdir():
