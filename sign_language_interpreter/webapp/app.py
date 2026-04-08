@@ -11,10 +11,12 @@ from config import Config
 from models.user import Database, User
 from services.isl_detector import ISLDetector
 from services.tts_service import TTSService
+from mcp.sign_language_mcp_server import mcp_blueprint
 
 app = Flask(__name__)
 app.config.from_object(Config)
 CORS(app)
+app.register_blueprint(mcp_blueprint)
 
 # Initialize SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
