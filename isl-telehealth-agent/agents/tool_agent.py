@@ -67,8 +67,8 @@ class ToolAgent:
         Returns:
             Dict[str, Any]: Combined symptom + emergency check result.
         """
-        symptom_text = " ".join(filter(None, [entities.get("symptom"), entities.get("body_part")]))
-        symptom_list = [s for s in [entities.get("symptom"), entities.get("body_part")] if s]
+        symptom_text = " ".join(filter(None, [entities.get("body_part"), entities.get("symptom")]))
+        symptom_list = [s for s in [entities.get("body_part"), entities.get("symptom")] if s]
 
         lookup_result = {}
         emergency_result = {}

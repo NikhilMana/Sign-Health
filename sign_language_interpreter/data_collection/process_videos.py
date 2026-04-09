@@ -74,7 +74,10 @@ def process_videos_for_sign_language(use_multiprocessing=True):
         sign_output_dir.mkdir(exist_ok=True)
         
         sign_videos_dir = videos_folder / sign_label
-        video_files = list(sign_videos_dir.glob("*.mp4"))
+        VIDEO_EXTENSIONS = ['*.mp4', '*.MP4', '*.mov', '*.MOV', '*.avi', '*.AVI', '*.webm', '*.mkv']
+        video_files = []
+        for ext in VIDEO_EXTENSIONS:
+            video_files.extend(sign_videos_dir.glob(ext))
         
         for video_idx, video_path in enumerate(video_files):
             output_file = sign_output_dir / f"{video_idx}.npy"
@@ -131,7 +134,18 @@ def get_keypoint_info():
     print(f"Hands: 21×3×2 = {21*3*2} | Total: {33*4+468*3+21*3*2} values/frame")
 
 if __name__ == "__main__":
+    import sys
+    import platform
+
     print("Sign Language Video Processing Script")
     print("=" * 50)
     get_keypoint_info()
-    process_videos_for_sign_language(use_multiprocessing=True)
+
+    # Default: disable multiprocessing on Windows due to known crashes with TensorFlow
+    use_mp = "--multiprocessing" in sys.argv
+    if platform.system() == "Windows" and not use_mp:
+        print("\n[INFO] Windows detected: running in single-process mode for stability.")
+        print("[INFO] Pass --multiprocessing to force parallel mode.\n")
+        process_videos_for_sign_language(use_multiprocessing=False)
+    else:
+        process_videos_for_sign_language(use_multiprocessing=True)

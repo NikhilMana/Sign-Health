@@ -11,9 +11,13 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 # Add parent directory to sys.path so we can import the telehealth core
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(PROJECT_DIR)
+# Force CWD so relative config files (like agents_config.yaml) resolve correctly
+os.chdir(PROJECT_DIR)
 
-from main import TelehealthOrchestrator
+# Initialize orchestrator globally but lazily
+_orchestrator = None
 
 # MCP SDK Standard Imports
 from mcp.server import Server
@@ -73,45 +77,60 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
 
     logger.info(f"Running consultation for {patient_id} with signs: {tokens}")
 
-    # Instantiate the mastermind orchestrator
-    orchestrator = TelehealthOrchestrator()
-    session_id = orchestrator.start_session(patient_id)
+    import io
+    from contextlib import redirect_stdout
     
-    # 1. Process all signs through the Medical Context Agent
-    for sign in tokens:
-        # Simulate high confidence prediction from the camera Perception tracking
-        orchestrator.registry.context.process_sign(sign, confidence=0.95)
-
-    # 2. Extract structured medical complaint
-    complaint = orchestrator.registry.context.extract_complaint()
+    global _orchestrator
     
-    # 3. Classify the Intent (e.g., SYMPTOM_REPORT vs EMERGENCY_ALERT)
-    intent_result = orchestrator.registry.intent.classify_intent(complaint)
-    
-    # 4. Route intent to Dialogue Agent for action logic
-    action = orchestrator.registry.dialogue.manage_turn(intent_result, session_id)
-
+    if _orchestrator is None:
+        logger.info("First tool invocation: Loading TensorFlow and Telehealth pipeline dynamically...")
+        from main import TelehealthOrchestrator
+        _orchestrator = TelehealthOrchestrator()
+            
     final_response = {}
-
-    # 5. Execute required Tools (via ToolAgent querying other internal MCPs) and format the final response
-    if action["action"] == "execute_tool":
-        tool_result = await orchestrator.registry.tool.execute(action)
-        final_response = orchestrator.registry.response.format_response(tool_result, intent_result["intent"])
-    elif action["action"] == "ask_clarification":
-        final_response = {
-            "text_response": action["question"],
-            "urgency_level": "none"
-        }
-    elif action["action"] == "emergency_escalation":
-        final_response = orchestrator.registry.response.format_response(
-            {"urgency_level": "emergency", "immediate_action": action["message"]},
-            "EMERGENCY_ALERT"
-        )
-    else:
-        final_response["text_response"] = "I am unable to assist with this right now."
-
-    # End the session cleanly
-    orchestrator.end_session(session_id)
+    intent_result = {}
+    action = {"action": "none"}
+    complaint = {}
+    session_id = "unknown"
+    
+    # Hide all rogue print() statements to protect the MCP JSON-RPC protocol
+    # and to prevent Windows cp1252 terminal Unicode crashes!
+    with redirect_stdout(io.StringIO()):        
+        session_id = _orchestrator.start_session(patient_id)
+        
+        # 1. Process all signs through the Medical Context Agent
+        for sign in tokens:
+            # Simulate high confidence prediction from the camera Perception tracking
+            _orchestrator.registry.context.process_sign(sign, confidence=0.95)
+    
+        # 2. Extract structured medical complaint
+        complaint = _orchestrator.registry.context.extract_complaint()
+        
+        # 3. Classify the Intent (e.g., SYMPTOM_REPORT vs EMERGENCY_ALERT)
+        intent_result = _orchestrator.registry.intent.classify_intent(complaint)
+        
+        # 4. Route intent to Dialogue Agent for action logic
+        action = _orchestrator.registry.dialogue.manage_turn(intent_result, session_id)
+    
+        # 5. Execute required Tools (via ToolAgent querying other internal MCPs) and format the final response
+        if action["action"] == "execute_tool":
+            tool_result = await _orchestrator.registry.tool.execute(action)
+            final_response = _orchestrator.registry.response.format_response(tool_result, intent_result["intent"])
+        elif action["action"] == "ask_clarification":
+            final_response = {
+                "text_response": action["question"],
+                "urgency_level": "none"
+            }
+        elif action["action"] == "emergency_escalation":
+            final_response = _orchestrator.registry.response.format_response(
+                {"urgency_level": "emergency", "immediate_action": action["message"]},
+                "EMERGENCY_ALERT"
+            )
+        else:
+            final_response["text_response"] = "I am unable to assist with this right now."
+    
+        # End the session cleanly
+        _orchestrator.end_session(session_id)
 
     # Compile the final MCP Tool Response formatted neatly for the external AI
     response_lines = [
@@ -138,4 +157,46 @@ async def main():
         await app.run(read_stream, write_stream, app.create_initialization_options())
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    if len(sys.argv) > 1:
+        # Local bypass mode for Cursor AI testing & Terminal Testing
+        patient = "synth_patient_001"
+        test_tokens = sys.argv[1:]
+        print(f"--- LOCAL CLI MODE BYPASS ---")
+        print(f"Running Telehealth Pipeline for patient {patient} with signs: {test_tokens}")
+        print("Loading AI Models... Please wait...\n")
+        
+        # Instantiate and run just like the tool would
+        from main import TelehealthOrchestrator
+        orchestrator = TelehealthOrchestrator()
+        session_id = orchestrator.start_session(patient)
+        
+        for sign in test_tokens:
+            orchestrator.registry.context.process_sign(sign, confidence=0.95)
+            
+        complaint = orchestrator.registry.context.extract_complaint()
+        intent_result = orchestrator.registry.intent.classify_intent(complaint)
+        action = orchestrator.registry.dialogue.manage_turn(intent_result, session_id)
+        
+        if action["action"] == "execute_tool":
+            tool_res = asyncio.run(orchestrator.registry.tool.execute(action))
+            final_res = orchestrator.registry.response.format_response(tool_res, intent_result["intent"])
+        elif action["action"] == "emergency_escalation":
+            final_res = orchestrator.registry.response.format_response(
+                {"urgency_level": "emergency", "immediate_action": action["message"]}, "EMERGENCY_ALERT"
+            )
+        else:
+            final_res = {"text_response": "Uncertain logic.", "urgency_color": "yellow"}
+            
+        orchestrator.end_session(session_id)
+        
+        print("\n" + "="*50)
+        print("FINAL CLINICAL OUTCOME:")
+        print("="*50)
+        print(f"Extracted Context: {complaint}")
+        print(f"Action Taken:      {action['action']}")
+        print(f"Urgency Color:     {final_res.get('urgency_color', 'UNKNOWN').upper()}")
+        print(f"Doctor Response:   {final_res.get('text_response')}")
+        print("="*50)
+    else:
+        # Standard MCP Server Mode
+        asyncio.run(main())

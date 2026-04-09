@@ -34,7 +34,7 @@ class PerceptionAgent:
         Args:
             config_path (str): Optional path to config file.
         """
-        self.demo_mode = True
+        self.demo_mode = False
         self.demo_index = 0
         self.frame_count = 0
         

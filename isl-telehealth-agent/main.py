@@ -164,12 +164,8 @@ async def main():
     # Small delay to let the WS server bind
     await asyncio.sleep(1)
 
-    use_demo = input("Run demo mode? (y/n): ").strip().lower()
-
-    if use_demo == 'y':
-        await orchestrator.run_demo()
-    else:
-        await orchestrator.run_live()
+    # Automatically start Live Dashboard Web Server Mode
+    await orchestrator.run_live()
 
 
 if __name__ == "__main__":

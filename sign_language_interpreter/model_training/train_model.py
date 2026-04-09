@@ -35,7 +35,7 @@ else:
 
 # Add this constant at the top of the file after imports
 
-MIN_SAMPLES_PER_CLASS = 10
+MIN_SAMPLES_PER_CLASS = 1
 
 
 
